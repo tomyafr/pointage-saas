@@ -284,24 +284,25 @@ h4 {
 }
 
 .brand-icon {
-    width: 80px;
-    height: 80px;
-    background: #fff;
-    border-radius: 50%;
+    width: 120px;
+    height: auto;
+    background: transparent;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 1.5rem;
-    overflow: hidden;
-    box-shadow: 0 0 40px var(--primary-glow), 0 10px 30px rgba(0, 0, 0, 0.3);
+    overflow: visible;
+    box-shadow: none;
     transition: var(--transition-smooth);
-    animation: iconPulse 3s ease-in-out infinite;
+    animation: none;
 }
 
 .brand-icon img {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 20px var(--primary-glow));
 }
 
 .brand-icon:hover {
