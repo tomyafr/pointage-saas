@@ -26,21 +26,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$nom]);
         $user = $stmt->fetch();
 
-        if ($user && password_verify($password, $user['password_hash'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_nom'] = $user['nom'];
-            $_SESSION['user_prenom'] = $user['prenom'];
-            $_SESSION['role'] = $user['role'];
-            $_SESSION['login_time'] = time();
+        if ($user) {
+            if (password_verify($password, $user['password_hash'])) {
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_nom'] = $user['nom'];
+                $_SESSION['user_prenom'] = $user['prenom'];
+                $_SESSION['role'] = $user['role'];
+                $_SESSION['login_time'] = time();
 
-            if ($user['role'] === 'chef') {
-                header('Location: chef.php');
+                if ($user['role'] === 'chef') {
+                    header('Location: chef.php');
+                } else {
+                    header('Location: operator.php');
+                }
+                exit;
             } else {
-                header('Location: operator.php');
+                $error = "Le mot de passe saisi est incorrect pour le compte : " . htmlspecialchars($nom);
             }
-            exit;
         } else {
-            $error = 'Nom ou mot de passe incorrect.';
+            $error = "L'identifiant '" . htmlspecialchars($nom) . "' n'existe pas dans la base de données. Avez-vous importé le fichier db.sql ?";
         }
     }
 }
