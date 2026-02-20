@@ -34,13 +34,32 @@ function getDB()
     static $pdo = null;
     if ($pdo === null) {
         try {
-            // Utilisation des variables d'environnement Vercel Postgres
-            $host = getenv('POSTGRES_HOST');
-            $db = getenv('POSTGRES_DATABASE');
-            $user = getenv('POSTGRES_USER');
-            $pass = getenv('POSTGRES_PASSWORD');
+            // 1. Tenter de récupérer les variables individuelles (Vercel ou Neon)
+            $host = getenv('POSTGRES_HOST') ?: getenv('PGHOST');
+            $db = getenv('POSTGRES_DATABASE') ?: getenv('PGDATABASE');
+            $user = getenv('POSTGRES_USER') ?: getenv('PGUSER');
+            $pass = getenv('POSTGRES_PASSWORD') ?: getenv('PGPASSWORD');
 
-            $dsn = "pgsql:host=$host;port=5432;dbname=$db;sslmode=require";
+            if ($host) {
+                $dsn = "pgsql:host=$host;port=5432;dbname=$db;sslmode=require";
+            } else {
+                // 2. Repli sur DATABASE_URL si les variables individuelles sont absentes
+                $dbUrl = getenv('DATABASE_URL') ?: getenv('POSTGRES_URL');
+                if ($dbUrl) {
+                    $dsn = str_replace('postgres://', 'pgsql:', $dbUrl);
+                    // Nettoyage si format URL
+                    if (strpos($dsn, 'pgsql:') === 0) {
+                        $parts = parse_url($dbUrl);
+                        $host = $parts['host'];
+                        $db = ltrim($parts['path'], '/');
+                        $user = $parts['user'];
+                        $pass = $parts['pass'];
+                        $dsn = "pgsql:host=$host;port=5432;dbname=$db;sslmode=require";
+                    }
+                } else {
+                    die('Erreur : Variables de base de données (POSTGRES_HOST ou DATABASE_URL) non trouvées.');
+                }
+            }
 
             $pdo = new PDO($dsn, $user, $pass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
