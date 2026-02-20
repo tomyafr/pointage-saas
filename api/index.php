@@ -34,6 +34,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['login_time'] = time();
 
+                // Forcer la sauvegarde de la session avant redirection (important pour Vercel)
+                session_write_close();
+
                 if ($user['role'] === 'chef') {
                     header('Location: chef.php');
                 } else {
