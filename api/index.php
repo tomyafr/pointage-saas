@@ -15,13 +15,34 @@ if (isset($_SESSION['user_id'])) {
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $db = getDB();
+    
+    // Mode Démo / Accès Rapide
+    if (isset($_POST['demo_user'])) {
+        $nom = strtoupper(trim($_POST['demo_user']));
+        $stmt = $db->prepare('SELECT id, nom, prenom, role FROM users WHERE nom = ? AND actif IS TRUE');
+        $stmt->execute([$nom]);
+        $user = $stmt->fetch();
+        
+        if ($user) {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['user_nom'] = $user['nom'];
+            $_SESSION['user_prenom'] = $user['prenom'];
+            $_SESSION['role'] = $user['role'];
+            $_SESSION['login_time'] = time();
+            session_write_close();
+            
+            header('Location: ' . ($user['role'] === 'chef' ? 'chef.php' : 'operator.php'));
+            exit;
+        }
+    }
+
     $nom = strtoupper(trim($_POST['nom'] ?? ''));
     $password = $_POST['password'] ?? '';
 
     if (empty($nom) || empty($password)) {
         $error = 'Veuillez remplir tous les champs.';
     } else {
-        $db = getDB();
         $stmt = $db->prepare('SELECT id, nom, prenom, password_hash, role FROM users WHERE nom = ? AND actif IS TRUE');
         $stmt->execute([$nom]);
         $user = $stmt->fetch();
@@ -47,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = "Le mot de passe saisi est incorrect pour le compte : " . htmlspecialchars($nom);
             }
         } else {
-            $error = "L'identifiant '" . htmlspecialchars($nom) . "' n'existe pas dans la base de données. Avez-vous importé le fichier db.sql ?";
+            $error = "L'identifiant '" . htmlspecialchars($nom) . "' n'existe pas dans la base de données.";
         }
     }
 }
@@ -63,6 +84,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="theme-color" content="#0a0f1a">
     <title>Connexion - <?= APP_NAME ?></title>
     <link rel="stylesheet" href="assets/style.css">
+    <style>
+        .demo-section {
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .demo-title {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 16px;
+        }
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .demo-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            padding: 10px 4px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .demo-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary-color);
+            color: white;
+        }
+    </style>
 </head>
 
 <body>
@@ -98,9 +156,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary">
-                    Se connecter →
+                <button type="submit" class="btn btn-primary" style="background: #00f2ff; color: #000; font-weight: 700;">
+                    → SE CONNECTER
                 </button>
+
+                <div class="demo-section">
+                    <p class="demo-title">Accès Rapide Démo</p>
+                    <div class="demo-grid">
+                        <button type="submit" name="demo_user" value="DUPONT" class="demo-btn">Opérateur</button>
+                        <button type="submit" name="demo_user" value="MARTIN" class="demo-btn">Test</button>
+                        <button type="submit" name="demo_user" value="ADMIN" class="demo-btn">Admin</button>
+                    </div>
+                </div>
             </div>
         </form>
 
