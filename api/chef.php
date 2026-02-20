@@ -303,8 +303,8 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div style="margin-bottom: 2.5rem;">
-                <a href="https://www.118712.fr/professionnels/X0dXWVBRGgI" target="_blank" rel="noopener"
-                    class="brand-icon" style="width: 44px; height: 44px; font-size: 1.3rem; margin: 0 0 1rem 0;">🧲</a>
+                <div class="brand-icon" style="width: 48px; height: 48px; margin: 0 0 1rem 0;"><img
+                        src="assets/logo-raoul-lenoir.png" alt="Raoul Lenoir"></div>
                 <h2 style="font-size: 1.15rem;"><span class="text-gradient">Raoul Lenoir</span></h2>
                 <p
                     style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 0.25rem;">
@@ -348,7 +348,8 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
                     style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.4rem;">
                     Connecté</p>
                 <p style="font-weight: 600; font-size: 0.85rem;">
-                    <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?></p>
+                    <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?>
+                </p>
                 <a href="logout.php" class="btn btn-ghost"
                     style="width: 100%; margin-top: 1rem; color: var(--error); border-color: rgba(244, 63, 94, 0.15); font-size: 0.75rem; padding: 0.6rem;">
                     Se déconnecter
@@ -499,12 +500,15 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
                                                                 <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
                                                                     <td
                                                                         style="padding: 0.5rem; font-family: var(--font-mono); font-size: 0.75rem;">
-                                                                        <?= date('d/m/Y', strtotime($d['date_pointage'])) ?></td>
+                                                                        <?= date('d/m/Y', strtotime($d['date_pointage'])) ?>
+                                                                    </td>
                                                                     <td style="padding: 0.5rem;">
-                                                                        <?= htmlspecialchars($d['prenom'] . ' ' . $d['nom']) ?></td>
+                                                                        <?= htmlspecialchars($d['prenom'] . ' ' . $d['nom']) ?>
+                                                                    </td>
                                                                     <td
                                                                         style="padding: 0.5rem; text-align: right; font-weight: 700;">
-                                                                        <?= number_format($d['heures'], 2) ?>h</td>
+                                                                        <?= number_format($d['heures'], 2) ?>h
+                                                                    </td>
                                                                     <td style="padding: 0.5rem; text-align: center;">
                                                                         <?= $d['synced_bc'] ? '<span style="color:var(--success)">✓</span>' : '<span style="color:var(--text-dim)">—</span>' ?>
                                                                     </td>
@@ -568,8 +572,7 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
             </div>
 
             <div class="app-footer">
-                <a href="https://www.118712.fr/professionnels/X0dXWVBRGgI" target="_blank" rel="noopener">Raoul Lenoir
-                    SAS</a> · V<?= APP_VERSION ?> · <?= date('Y') ?>
+                Raoul Lenoir SAS · V<?= APP_VERSION ?> · <?= date('Y') ?>
             </div>
         </main>
     </div>

@@ -284,24 +284,28 @@ h4 {
 }
 
 .brand-icon {
-    width: 72px;
-    height: 72px;
-    background: linear-gradient(135deg, var(--primary) 0%, #e6a200 100%);
-    border-radius: var(--radius-lg);
+    width: 80px;
+    height: 80px;
+    background: #fff;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 1.5rem;
-    font-size: 2rem;
-    color: #000;
+    overflow: hidden;
     box-shadow: 0 0 40px var(--primary-glow), 0 10px 30px rgba(0, 0, 0, 0.3);
     transition: var(--transition-smooth);
     animation: iconPulse 3s ease-in-out infinite;
-    text-decoration: none;
+}
+
+.brand-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .brand-icon:hover {
-    transform: scale(1.08) rotate(-3deg);
+    transform: scale(1.05);
     box-shadow: 0 0 60px var(--primary-glow);
 }
 
@@ -499,22 +503,19 @@ h4 {
 }
 
 .animate-in {
-    animation: fadeInSlide 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation: fadeInSlide 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-in-delay-1 {
-    animation-delay: 0.1s;
-    opacity: 0;
+    animation: fadeInSlide 0.7s 0.1s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-in-delay-2 {
-    animation-delay: 0.2s;
-    opacity: 0;
+    animation: fadeInSlide 0.7s 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .animate-in-delay-3 {
-    animation-delay: 0.3s;
-    opacity: 0;
+    animation: fadeInSlide 0.7s 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 /* ═══════════ ALERTS ═══════════ */

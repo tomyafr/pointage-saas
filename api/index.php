@@ -156,8 +156,7 @@ $isLoggedIn = isset($_SESSION['user_id']);
 <body class="login-page">
     <div class="login-card animate-in">
         <div class="login-header">
-            <a href="https://www.118712.fr/professionnels/X0dXWVBRGgI" target="_blank" rel="noopener" class="brand-icon"
-                title="Raoul Lenoir — Voir la fiche entreprise">🧲</a>
+            <div class="brand-icon"><img src="assets/logo-raoul-lenoir.png" alt="Raoul Lenoir"></div>
             <h1 class="login-title"><span class="text-gradient">Raoul Lenoir</span></h1>
             <p class="login-subtitle">Système de Pointage Industriel</p>
         </div>

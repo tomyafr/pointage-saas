@@ -121,7 +121,7 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div style="margin-bottom: 2.5rem;">
-                <a href="https://www.118712.fr/professionnels/X0dXWVBRGgI" target="_blank" rel="noopener" class="brand-icon" style="width: 44px; height: 44px; font-size: 1.3rem; margin: 0 0 1rem 0;">🧲</a>
+                <div class="brand-icon" style="width: 48px; height: 48px; margin: 0 0 1rem 0;"><img src="assets/logo-raoul-lenoir.png" alt="Raoul Lenoir"></div>
                 <h2 style="font-size: 1.15rem;"><span class="text-gradient">Raoul Lenoir</span></h2>
                 <p style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 0.25rem;">Espace Opérateur</p>
             </div>
@@ -328,7 +328,7 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
             </div>
 
             <div class="app-footer">
-                <a href="https://www.118712.fr/professionnels/X0dXWVBRGgI" target="_blank" rel="noopener">Raoul Lenoir SAS</a> · V<?= APP_VERSION ?> · <?= date('Y') ?>
+                Raoul Lenoir SAS · V<?= APP_VERSION ?> · <?= date('Y') ?>
             </div>
         </main>
     </div>
