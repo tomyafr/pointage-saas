@@ -1,6 +1,6 @@
 {
   "functions": {
-    "*.php": {
+    "api/*.php": {
       "runtime": "vercel-php@0.7.2"
     }
   },
@@ -14,16 +14,16 @@
       "status": 403
     },
     {
-      "src": "/README.md",
-      "status": 403
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
     },
     {
       "src": "/(.*).php",
-      "dest": "/$1.php"
+      "dest": "/api/$1.php"
     },
     {
       "src": "/",
-      "dest": "/index.php"
+      "dest": "/api/index.php"
     }
   ]
 }
