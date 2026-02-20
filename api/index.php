@@ -81,8 +81,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="form-group">
                     <label class="form-label" for="password">Mot de passe</label>
-                    <input type="password" id="password" name="password" class="form-input" placeholder="••••••••"
-                        autocomplete="current-password" required>
+                    <div style="position:relative;">
+                        <input type="password" id="password" name="password" class="form-input" placeholder="••••••••"
+                            autocomplete="current-password" required>
+                        <button type="button" id="togglePassword"
+                            style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.2rem; padding:4px;">
+                            👁
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-primary">
@@ -90,6 +96,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </button>
             </div>
         </form>
+
+        <script>
+            const togglePassword = document.querySelector('#togglePassword');
+            const password = document.querySelector('#password');
+
+            togglePassword.addEventListener('click', function (e) {
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
+                this.textContent = type === 'password' ? '👁' : '🔒';
+            });
+        </script>
 
         <p
             style="text-align:center; color: var(--text-muted); font-size: 0.75rem; margin-top: 24px; font-family: var(--font-mono);">
