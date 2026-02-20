@@ -1,0 +1,32 @@
+{
+  "functions": {
+    "api/*.php": {
+      "runtime": "vercel-php@0.7.2"
+    },
+    "*.php": {
+      "runtime": "vercel-php@0.7.2"
+    }
+  },
+  "routes": [
+    {
+      "src": "/includes/(.*)",
+      "status": 403
+    },
+    {
+      "src": "/db.sql",
+      "status": 403
+    },
+    {
+      "src": "/README.md",
+      "status": 403
+    },
+    {
+      "src": "/(.*).php",
+      "dest": "/$1.php"
+    },
+    {
+      "src": "/",
+      "dest": "/index.php"
+    }
+  ]
+}

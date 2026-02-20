@@ -1,0 +1,8 @@
+.env
+*.log
+.DS_Store
+node_modules/
+.vercel/
+.htaccess
+db.sql
+README.md
