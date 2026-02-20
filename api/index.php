@@ -163,9 +163,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="demo-section">
                     <p class="demo-title">Accès Rapide Démo</p>
                     <div class="demo-grid">
-                        <button type="submit" name="demo_user" value="DUPONT" class="demo-btn">Opérateur</button>
-                        <button type="submit" name="demo_user" value="MARTIN" class="demo-btn">Test</button>
-                        <button type="submit" name="demo_user" value="ADMIN" class="demo-btn">Admin</button>
+                        <button type="submit" name="demo_user" value="DUPONT" class="demo-btn" formnovalidate>Opérateur</button>
+                        <button type="submit" name="demo_user" value="MARTIN" class="demo-btn" formnovalidate>Test</button>
+                        <button type="submit" name="demo_user" value="ADMIN" class="demo-btn" formnovalidate>Admin</button>
                     </div>
                 </div>
             </div>
