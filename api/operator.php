@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     } elseif ($_POST['action'] === 'supprimer') {
         $pointageId = intval($_POST['pointage_id'] ?? 0);
         if ($pointageId > 0) {
-            $stmt = $db->prepare('DELETE FROM pointages WHERE id = ? AND user_id = ? AND synced_bc = 0');
+            $stmt = $db->prepare('DELETE FROM pointages WHERE id = ? AND user_id = ? AND synced_bc IS FALSE');
             $stmt->execute([$pointageId, $userId]);
             $message = 'Pointage supprimé.';
             $messageType = 'success';
@@ -217,7 +217,8 @@ $joursFr = ['Monday' => 'Lundi', 'Tuesday' => 'Mardi', 'Wednesday' => 'Mercredi'
         <div id="tab-semaine" class="tab-content">
             <div class="card">
                 <div class="card-title">Semaine du <?= date('d/m', strtotime($week['monday'])) ?> au
-                    <?= date('d/m/Y', strtotime($week['sunday'])) ?></div>
+                    <?= date('d/m/Y', strtotime($week['sunday'])) ?>
+                </div>
 
                 <?php if (empty($pointages)): ?>
                     <div class="empty-state">
@@ -249,10 +250,11 @@ $joursFr = ['Monday' => 'Lundi', 'Tuesday' => 'Mardi', 'Wednesday' => 'Mercredi'
                                         <tr class="<?= $isToday ? 'today' : '' ?>">
                                             <td><?= $idx === 0 ? $jourNom . ' ' . $dt->format('d') : '' ?></td>
                                             <td style="font-family:var(--font-mono);font-size:0.8rem;">
-                                                <?= htmlspecialchars($p['numero_of']) ?></td>
+                                                <?= htmlspecialchars($p['numero_of']) ?>
+                                            </td>
                                             <td class="hours-cell" style="text-align:right;"><?= number_format($p['heures'], 2) ?>h</td>
                                         </tr>
-                                    <?php
+                                        <?php
                                     endforeach;
                                 else:
                                     // Afficher les jours ouvrés sans pointage (lun-ven)
@@ -263,7 +265,7 @@ $joursFr = ['Monday' => 'Lundi', 'Tuesday' => 'Mardi', 'Wednesday' => 'Mercredi'
                                             <td style="color:var(--text-muted);">—</td>
                                             <td style="text-align:right;color:var(--text-muted);">0.00h</td>
                                         </tr>
-                                    <?php
+                                        <?php
                                     endif;
                                 endif;
                             endforeach;

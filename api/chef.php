@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 SELECT p.id, p.numero_of, p.heures, p.date_pointage, u.nom, u.prenom
                 FROM pointages p
                 JOIN users u ON p.user_id = u.id
-                WHERE p.id IN ($placeholders) AND p.synced_bc = 0
+                WHERE p.id IN ($placeholders) AND p.synced_bc IS FALSE
             ");
             $stmt->execute($pointageIds);
             $toSync = $stmt->fetchAll();
@@ -389,7 +389,8 @@ function sendToBCAPI($payload)
                                                         <td><?= date('d/m', strtotime($d['date_pointage'])) ?></td>
                                                         <td><?= htmlspecialchars($d['prenom'] . ' ' . $d['nom']) ?></td>
                                                         <td class="hours-cell" style="text-align:right;">
-                                                            <?= number_format($d['heures'], 2) ?>h</td>
+                                                            <?= number_format($d['heures'], 2) ?>h
+                                                        </td>
                                                         <td>
                                                             <?php if ($d['synced_bc']): ?>
                                                                 <span style="color:var(--success);">✓</span>
