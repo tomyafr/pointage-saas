@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_prenom'] = $user['prenom'];
             $_SESSION['role'] = $user['role'];
             $_SESSION['login_time'] = time();
+            setSessionBackup();
             session_write_close();
 
             header('Location: ' . ($user['role'] === 'chef' ? 'chef.php' : 'operator.php'));
@@ -51,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['user_prenom'] = $user['prenom'];
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['login_time'] = time();
+                setSessionBackup();
                 session_write_close();
 
                 header('Location: ' . ($user['role'] === 'chef' ? 'chef.php' : 'operator.php'));
@@ -138,7 +140,8 @@ $isLoggedIn = isset($_SESSION['user_id']);
         <?php if ($isLoggedIn): ?>
             <div class="logged-in-card">
                 <p style="color: #00f2ff; margin-bottom: 15px;">Session active :
-                    <b><?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?></b></p>
+                    <b><?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?></b>
+                </p>
                 <a href="<?= $_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php' ?>" class="btn btn-primary"
                     style="background: #00f2ff; color: #000; text-decoration: none; display: block; margin-bottom: 10px;">
                     ACCÉDER AU TABLEAU DE BORD

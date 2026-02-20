@@ -1,4 +1,9 @@
 <?php
+// Debugging
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 // ============================================
 // CONFIGURATION - À adapter selon votre hébergement Hostinger
 // ============================================
@@ -77,9 +82,31 @@ function getDB()
 function startSecureSession()
 {
     if (session_status() === PHP_SESSION_NONE) {
-        // session_set_cookie_params(0, '/', '', true, true); // Alternative plus propre si besoin
         session_start();
     }
+
+    // Restaurer depuis le cookie si la session PHP est vide (important pour Vercel)
+    if (!isset($_SESSION['user_id']) && isset($_COOKIE['APP_SESSION_BACKUP'])) {
+        $data = json_decode(base64_decode($_COOKIE['APP_SESSION_BACKUP']), true);
+        if ($data && isset($data['user_id'])) {
+            $_SESSION['user_id'] = $data['user_id'];
+            $_SESSION['user_nom'] = $data['user_nom'];
+            $_SESSION['user_prenom'] = $data['user_prenom'];
+            $_SESSION['role'] = $data['role'];
+        }
+    }
+}
+
+// Enregistrer les infos en cookie de secours
+function setSessionBackup()
+{
+    $data = base64_encode(json_encode([
+        'user_id' => $_SESSION['user_id'] ?? '',
+        'user_nom' => $_SESSION['user_nom'] ?? '',
+        'user_prenom' => $_SESSION['user_prenom'] ?? '',
+        'role' => $_SESSION['role'] ?? ''
+    ]));
+    setcookie('APP_SESSION_BACKUP', $data, time() + 3600 * 24, '/', '', false, true);
 }
 
 // Vérifier l'authentification
