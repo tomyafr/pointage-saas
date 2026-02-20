@@ -59,10 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header('Location: ' . ($user['role'] === 'chef' ? 'chef.php' : 'operator.php'));
                 exit;
             } else {
-                $error = "Le mot de passe saisi est incorrect.";
+                $error = "Accès refusé. Vérifiez vos identifiants.";
             }
         } else {
-            $error = "L'identifiant '" . htmlspecialchars($nom) . "' n'existe pas.";
+            $error = "Utilisateur inconnu.";
         }
     }
 }
@@ -76,143 +76,116 @@ $isLoggedIn = isset($_SESSION['user_id']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Connexion - <?= APP_NAME ?></title>
+    <title>Connexion | Raoul Lenoir Pointage</title>
     <link rel="stylesheet" href="assets/style.css">
     <style>
-        .demo-section {
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        .demo-access {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--glass-border);
         }
 
-        .demo-title {
+        .demo-label {
             text-align: center;
-            color: var(--text-muted);
-            font-size: 0.7rem;
+            font-size: 0.75rem;
+            color: var(--text-dim);
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            margin-bottom: 16px;
+            margin-bottom: 1rem;
         }
 
-        .demo-grid {
+        .demo-chips {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-
-        .demo-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: var(--text-muted);
-            padding: 10px 4px;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-
-        .demo-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: #00f2ff;
-            color: white;
-        }
-
-        .logged-in-card {
-            background: rgba(0, 242, 255, 0.1);
-            border: 1px solid #00f2ff;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-            margin-bottom: 20px;
+            gap: 0.75rem;
         }
     </style>
 </head>
 
-<body>
-    <div class="login-container">
+<body class="login-page">
+    <div class="login-card animate-in">
         <div class="login-header">
-            <div class="login-icon">⏱</div>
-            <h1 class="login-title"><?= APP_NAME ?></h1>
-            <p class="login-subtitle">Saisie des heures par OF</p>
+            <div class="brand-icon">🧲</div>
+            <h1 class="login-title"><span class="text-gradient">Raoul Lenoir</span></h1>
+            <p class="login-subtitle">Système de Pointage Intelligent</p>
         </div>
 
         <?php if ($isLoggedIn): ?>
-            <div class="logged-in-card">
-                <p style="color: #00f2ff; margin-bottom: 15px;">Session active :
-                    <b><?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?></b>
+            <div class="card glass text-center">
+                <p style="color: var(--primary); margin-bottom: 1.5rem; font-size: 1.1rem;">
+                    Bienvenue, <b><?= htmlspecialchars($_SESSION['user_prenom']) ?></b>
                 </p>
                 <a href="<?= $_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php' ?>" class="btn btn-primary"
-                    style="background: #00f2ff; color: #000; text-decoration: none; display: block; margin-bottom: 10px;">
-                    ACCÉDER AU TABLEAU DE BORD
+                    style="width: 100%; margin-bottom: 1rem;">
+                    Accéder au Dashboard
                 </a>
-                <a href="index.php?logout=1" style="color: var(--text-muted); font-size: 0.8rem;">Se déconnecter</a>
+                <a href="index.php?logout=1" class="text-dim" style="font-size: 0.85rem; text-decoration: none;">Changer de
+                    compte</a>
             </div>
         <?php else: ?>
 
             <?php if ($error): ?>
-                <div class="alert alert-error">⚠ <?= htmlspecialchars($error) ?></div>
+                <div class="alert alert-error animate-in">
+                    <span>⚠</span>
+                    <span><?= htmlspecialchars($error) ?></span>
+                </div>
             <?php endif; ?>
 
-            <form method="POST" autocomplete="off">
-                <div class="card">
-                    <div class="form-group">
-                        <label class="form-label" for="nom">Nom de famille</label>
-                        <input type="text" id="nom" name="nom" class="form-input" placeholder="Ex: DUPONT"
-                            autocapitalize="characters" autocomplete="username" required
-                            value="<?= htmlspecialchars($_POST['nom'] ?? '') ?>">
+            <form method="POST" autocomplete="off" class="card glass">
+                <div class="form-group">
+                    <label class="label" for="nom">Identifiant</label>
+                    <input type="text" id="nom" name="nom" class="input" placeholder="NOM DE FAMILLE"
+                        autocapitalize="characters" autocomplete="username" required
+                        value="<?= htmlspecialchars($_POST['nom'] ?? '') ?>">
+                </div>
+
+                <div class="form-group">
+                    <label class="label" for="password">Mot de passe</label>
+                    <div style="position:relative;">
+                        <input type="password" id="password" name="password" class="input" placeholder="••••••••"
+                            autocomplete="current-password" required>
+                        <button type="button" id="togglePassword"
+                            style="position:absolute; right:1rem; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:1.2rem;">
+                            👁
+                        </button>
                     </div>
+                </div>
 
-                    <div class="form-group">
-                        <label class="form-label" for="password">Mot de passe</label>
-                        <div style="position:relative;">
-                            <input type="password" id="password" name="password" class="form-input" placeholder="••••••••"
-                                autocomplete="current-password" required>
-                            <button type="button" id="togglePassword"
-                                style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:1.2rem; padding:4px;">
-                                👁
-                            </button>
-                        </div>
-                    </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Connexion Sécurisée
+                </button>
 
-                    <button type="submit" class="btn btn-primary"
-                        style="background: #00f2ff; color: #000; font-weight: 700;">
-                        → SE CONNECTER
-                    </button>
-
-                    <div class="demo-section">
-                        <p class="demo-title">Accès Rapide Démo</p>
-                        <div class="demo-grid">
-                            <button type="submit" name="demo_user" value="DUPONT" class="demo-btn"
-                                formnovalidate>Opérateur</button>
-                            <button type="submit" name="demo_user" value="MARTIN" class="demo-btn"
-                                formnovalidate>Test</button>
-                            <button type="submit" name="demo_user" value="ADMIN" class="demo-btn"
-                                formnovalidate>Admin</button>
-                        </div>
+                <div class="demo-access">
+                    <p class="demo-label">Accès Rapide Industriel</p>
+                    <div class="demo-chips">
+                        <button type="submit" name="demo_user" value="DUPONT" class="btn btn-ghost"
+                            style="padding: 0.75rem; font-size: 0.7rem;" formnovalidate>Opérateur</button>
+                        <button type="submit" name="demo_user" value="MARTIN" class="btn btn-ghost"
+                            style="padding: 0.75rem; font-size: 0.7rem;" formnovalidate>Test</button>
+                        <button type="submit" name="demo_user" value="ADMIN" class="btn btn-ghost"
+                            style="padding: 0.75rem; font-size: 0.7rem;" formnovalidate>Admin</button>
                     </div>
                 </div>
             </form>
         <?php endif; ?>
 
-        <script>
-            const togglePassword = document.querySelector('#togglePassword');
-            const password = document.querySelector('#password');
-            if (togglePassword) {
-                togglePassword.addEventListener('click', function (e) {
-                    const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-                    password.setAttribute('type', type);
-                    this.textContent = type === 'password' ? '👁' : '🔒';
-                });
-            }
-        </script>
-
         <p
-            style="text-align:center; color: var(--text-muted); font-size: 0.75rem; margin-top: 24px; font-family: var(--font-mono);">
-            v<?= APP_VERSION ?> · <?= date('Y') ?>
+            style="text-align:center; color: var(--text-dim); font-size: 0.8rem; margin-top: 2rem; font-family: var(--font-mono); letter-spacing: 1px;">
+            VER. <?= APP_VERSION ?> · RAOUL LENOIR SAS · <?= date('Y') ?>
         </p>
     </div>
+
+    <script>
+        const togglePassword = document.querySelector('#togglePassword');
+        const password = document.querySelector('#password');
+        if (togglePassword) {
+            togglePassword.addEventListener('click', function () {
+                const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                password.setAttribute('type', type);
+                this.textContent = type === 'password' ? '👁' : '🔒';
+            });
+        }
+    </script>
 </body>
 
 </html>

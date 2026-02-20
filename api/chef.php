@@ -245,250 +245,320 @@ function sendToBCAPI($payload)
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0a0f1a">
-    <title>Chef d'atelier - <?= APP_NAME ?></title>
+    <title>Espace Chef d'Atelier | Raoul Lenoir</title>
     <link rel="stylesheet" href="assets/style.css">
+    <style>
+        .of-row:hover {
+            background: rgba(255, 179, 0, 0.05);
+            cursor: pointer;
+        }
+
+        .detail-row {
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .badge-pending {
+            background: rgba(14, 165, 233, 0.1);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(14, 165, 233, 0.2);
+        }
+
+        .badge-synced {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        /* Custom Table Style for Chef */
+        .chef-table th {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 2px solid var(--glass-border);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .chef-table td {
+            padding: 1.25rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        }
+    </style>
 </head>
 
 <body>
-    <div class="app-container wide">
-        <!-- Header -->
-        <header class="app-header">
-            <div class="app-logo">
-                <div class="app-logo-icon">⏱</div>
-                <div>
-                    <div class="app-logo-text"><?= APP_NAME ?></div>
-                    <div class="app-logo-sub">Chef d'atelier</div>
+    <div class="dashboard-layout animate-in">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="login-header" style="text-align: left; margin-bottom: 3rem;">
+                <div class="brand-icon" style="width: 48px; height: 48px; font-size: 1.5rem; margin: 0 0 1rem 0;">🧲
                 </div>
+                <h2 style="font-size: 1.25rem;"><span class="text-gradient">Raoul Lenoir</span></h2>
+                <p style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px;">
+                    Chef d'Atelier</p>
             </div>
-            <div style="display:flex; align-items:center; gap:8px;">
-                <span
-                    class="user-badge"><?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?></span>
-                <a href="logout.php" class="btn-logout">Quitter</a>
-            </div>
-        </header>
 
-        <?php if ($message): ?>
-            <div class="alert alert-<?= $messageType ?>"><?= htmlspecialchars($message) ?></div>
-        <?php endif; ?>
+            <nav style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 3rem;">
+                <a href="chef.php" class="btn btn-primary"
+                    style="justify-content: flex-start; padding: 0.75rem 1.25rem;">
+                    <span>📊</span> Tableau de bord
+                </a>
+                <a href="operator.php" class="btn btn-ghost"
+                    style="justify-content: flex-start; padding: 0.75rem 1.25rem;">
+                    <span>📝</span> Mode Saisie
+                </a>
+            </nav>
 
-        <!-- Stats -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value"><?= $totalOfs ?></div>
-                <div class="stat-label">OFs actifs</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value"><?= number_format($totalHeures, 1) ?></div>
-                <div class="stat-label">Heures totales</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" style="color:var(--info);"><?= $totalPending ?></div>
-                <div class="stat-label">À synchroniser</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" style="color:var(--success);"><?= $totalSynced ?></div>
-                <div class="stat-label">Synchronisés</div>
-            </div>
-        </div>
-
-        <!-- Filtres -->
-        <div class="filter-bar">
-            <select class="form-input"
-                onchange="window.location='chef.php?week='+this.value+'&of=<?= urlencode($filterOf) ?>'">
-                <option value="current" <?= $filterWeek === 'current' ? 'selected' : '' ?>>Semaine en cours</option>
-                <option value="last" <?= $filterWeek === 'last' ? 'selected' : '' ?>>Semaine dernière</option>
-            </select>
-            <form method="GET" style="display:flex;gap:8px;flex:1;">
-                <input type="hidden" name="week" value="<?= htmlspecialchars($filterWeek) ?>">
-                <input type="text" name="of" class="form-input" placeholder="Filtrer par OF..."
-                    value="<?= htmlspecialchars($filterOf) ?>">
-            </form>
-            <a href="export-excel.php?week=<?= urlencode($filterWeek) ?>&of=<?= urlencode($filterOf) ?>"
-                class="btn btn-secondary" style="width:auto;padding:10px 18px;font-size:0.75rem;white-space:nowrap;">
-                📊 Export Excel
-            </a>
-        </div>
-
-        <!-- Tableau des OF -->
-        <form method="POST" id="syncForm">
-            <input type="hidden" name="action" value="sync_bc">
-
-            <div class="card">
-                <div class="card-title">
-                    Récapitulatif par OF — <?= date('d/m', strtotime($dateDebut)) ?> au
-                    <?= date('d/m/Y', strtotime($dateFin)) ?>
+            <div style="margin-top: auto; padding-top: 2rem; border-top: 1px solid var(--glass-border);">
+                <div style="margin-bottom: 1.5rem;">
+                    <p
+                        style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;">
+                        Session active</p>
+                    <p style="font-weight: 600; font-size: 0.9rem;">
+                        <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?></p>
                 </div>
-
-                <?php if (empty($ofsData)): ?>
-                    <div class="empty-state">
-                        <div class="empty-state-icon">📊</div>
-                        <p class="empty-state-text">Aucun pointage sur cette période</p>
-                    </div>
-                <?php else: ?>
-                    <table class="of-table">
-                        <thead>
-                            <tr>
-                                <th style="width:30px;">
-                                    <input type="checkbox" class="sync-check" id="checkAll" onchange="toggleAll(this)">
-                                </th>
-                                <th>N° OF</th>
-                                <th>Heures</th>
-                                <th>Opér.</th>
-                                <th>Statut</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($ofsData as $of): ?>
-                                <tr onclick="toggleDetail('detail-<?= htmlspecialchars($of['numero_of']) ?>')"
-                                    style="cursor:pointer;">
-                                    <td onclick="event.stopPropagation();">
-                                        <?php if ($of['nb_pending'] > 0): ?>
-                                            <?php
-                                            $pendingIds = [];
-                                            foreach ($detailsParOf[$of['numero_of']] ?? [] as $d) {
-                                                if (!$d['synced_bc'])
-                                                    $pendingIds[] = $d['id'];
-                                            }
-                                            ?>
-                                            <input type="checkbox" class="sync-check of-check"
-                                                data-ids="<?= implode(',', $pendingIds) ?>" onchange="updateHiddenInputs()">
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <span class="of-number"><?= htmlspecialchars($of['numero_of']) ?></span>
-                                    </td>
-                                    <td>
-                                        <span class="of-hours"><?= number_format($of['total_heures'], 2) ?>h</span>
-                                    </td>
-                                    <td><?= $of['nb_operateurs'] ?></td>
-                                    <td>
-                                        <?php if ($of['nb_pending'] > 0): ?>
-                                            <span class="badge badge-pending"><?= $of['nb_pending'] ?> en attente</span>
-                                        <?php endif; ?>
-                                        <?php if ($of['nb_synced'] > 0): ?>
-                                            <span class="badge badge-synced"><?= $of['nb_synced'] ?> sync</span>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
-                                <!-- Détails cachés -->
-                                <tr id="detail-<?= htmlspecialchars($of['numero_of']) ?>" style="display:none;">
-                                    <td colspan="5" style="padding:0 10px 14px 40px; background:var(--bg-secondary);">
-                                        <table class="week-table" style="margin-top:8px;">
-                                            <thead>
-                                                <tr>
-                                                    <th>Date</th>
-                                                    <th>Opérateur</th>
-                                                    <th style="text-align:right;">Heures</th>
-                                                    <th>Sync</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php foreach ($detailsParOf[$of['numero_of']] ?? [] as $d): ?>
-                                                    <tr>
-                                                        <td><?= date('d/m', strtotime($d['date_pointage'])) ?></td>
-                                                        <td><?= htmlspecialchars($d['prenom'] . ' ' . $d['nom']) ?></td>
-                                                        <td class="hours-cell" style="text-align:right;">
-                                                            <?= number_format($d['heures'], 2) ?>h
-                                                        </td>
-                                                        <td>
-                                                            <?php if ($d['synced_bc']): ?>
-                                                                <span style="color:var(--success);">✓</span>
-                                                            <?php else: ?>
-                                                                <span style="color:var(--text-muted);">—</span>
-                                                            <?php endif; ?>
-                                                        </td>
-                                                    </tr>
-                                                <?php endforeach; ?>
-                                            </tbody>
-                                        </table>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
+                <a href="logout.php" class="btn btn-ghost"
+                    style="width: 100%; color: var(--error); border-color: rgba(244, 63, 94, 0.2);">
+                    Se déconnecter
+                </a>
             </div>
+        </aside>
 
-            <!-- Bouton sync BC -->
-            <?php if ($totalPending > 0): ?>
-                <div id="syncContainer" style="display:none;">
-                    <button type="submit" class="btn btn-success" id="syncBtn"
-                        onclick="return confirm('Confirmer la synchronisation vers Business Central ?')">
-                        ↑ Synchroniser vers Business Central (<span id="syncCount">0</span> pointages)
-                    </button>
+        <!-- Main Content -->
+        <main class="main-content">
+            <?php if ($message): ?>
+                <div class="alert alert-<?= $messageType ?> animate-in">
+                    <span><?= $messageType === 'success' ? '✓' : '⚠' ?></span>
+                    <span><?= htmlspecialchars($message) ?></span>
                 </div>
             <?php endif; ?>
 
-            <div id="hiddenInputsContainer"></div>
-        </form>
-
-        <!-- Historique des syncs -->
-        <?php if (!empty($syncLogs)): ?>
-            <div class="card" style="margin-top:16px;">
-                <div class="card-title">Dernières synchronisations</div>
-                <table class="week-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Pointages</th>
-                            <th>Statut</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($syncLogs as $log): ?>
-                            <tr>
-                                <td><?= date('d/m H:i', strtotime($log['created_at'])) ?></td>
-                                <td><?= $log['nb_pointages'] ?></td>
-                                <td>
-                                    <span class="badge <?= $log['status'] === 'success' ? 'badge-synced' : 'badge-pending' ?>">
-                                        <?= $log['status'] === 'success' ? '✓ OK' : '✕ Erreur' ?>
-                                    </span>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+            <div class="stats-grid">
+                <div class="stat-item glass">
+                    <span class="stat-label">OFs sur la période</span>
+                    <span class="stat-value"><?= $totalOfs ?></span>
+                </div>
+                <div class="stat-item glass">
+                    <span class="stat-label">Total Heures</span>
+                    <span class="stat-value"><?= number_format($totalHeures, 1) ?>h</span>
+                </div>
+                <div class="stat-item glass">
+                    <span class="stat-label">Pointages en attente</span>
+                    <span class="stat-value" style="color: var(--accent-cyan);"><?= $totalPending ?></span>
+                </div>
             </div>
-        <?php endif; ?>
+
+            <div class="card glass">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2.5rem; flex-wrap: wrap; gap: 1.5rem;">
+                    <h3 style="font-size: 1.5rem;">Récapitulatif par Ordre de Fabrication</h3>
+
+                    <form method="GET" style="display: flex; gap: 0.75rem;">
+                        <select name="week" class="input" style="width: auto; padding-0.5rem 1rem;"
+                            onchange="this.form.submit()">
+                            <option value="current" <?= $filterWeek === 'current' ? 'selected' : '' ?>>Semaine en cours
+                            </option>
+                            <option value="last" <?= $filterWeek === 'last' ? 'selected' : '' ?>>Semaine dernière</option>
+                        </select>
+                        <input type="text" name="of" class="input" style="width: 180px;" placeholder="Rechercher OF..."
+                            value="<?= htmlspecialchars($filterOf) ?>">
+                        <button type="submit" class="btn btn-ghost" style="padding: 0.5rem 1rem;">Go</button>
+                    </form>
+                </div>
+
+                <form method="POST" id="syncForm">
+                    <input type="hidden" name="action" value="sync_bc">
+
+                    <div style="overflow-x: auto;">
+                        <table class="chef-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px; text-align: center;">
+                                        <input type="checkbox" id="checkAll" onchange="toggleAll(this)"
+                                            style="width: 18px; height: 18px; accent-color: var(--primary);">
+                                    </th>
+                                    <th>Numéro d'OF</th>
+                                    <th>Période</th>
+                                    <th style="text-align: right;">Total Heures</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($ofsData)): ?>
+                                    <tr>
+                                        <td colspan="5" style="padding: 4rem; text-align: center; opacity: 0.5;">Aucune
+                                            donnée sur cette période.</td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($ofsData as $of): ?>
+                                        <tr class="of-row"
+                                            onclick="toggleDetail('detail-<?= htmlspecialchars($of['numero_of']) ?>')">
+                                            <td style="text-align: center;" onclick="event.stopPropagation()">
+                                                <?php if ($of['nb_pending'] > 0): ?>
+                                                    <?php
+                                                    $pIds = array_column($detailsParOf[$of['numero_of']] ?? [], 'id');
+                                                    $pendingIds = [];
+                                                    foreach ($detailsParOf[$of['numero_of']] ?? [] as $det)
+                                                        if (!$det['synced_bc'])
+                                                            $pendingIds[] = $det['id'];
+                                                    ?>
+                                                    <input type="checkbox" class="of-check"
+                                                        data-ids="<?= implode(',', $pendingIds) ?>" onchange="updateHiddenInputs()"
+                                                        style="width: 18px; height: 18px; accent-color: var(--primary);">
+                                                <?php endif; ?>
+                                            </td>
+                                            <td
+                                                style="font-family: var(--font-mono); font-weight: 700; color: var(--primary); font-size: 1.1rem;">
+                                                <?= htmlspecialchars($of['numero_of']) ?>
+                                            </td>
+                                            <td style="font-size: 0.85rem; color: var(--text-muted);">
+                                                Du <?= date('d/m', strtotime($of['premiere_date'])) ?> au
+                                                <?= date('d/m', strtotime($of['derniere_date'])) ?>
+                                            </td>
+                                            <td style="text-align: right; font-weight: 800; font-size: 1.1rem;">
+                                                <?= number_format($of['total_heures'], 2) ?>h
+                                            </td>
+                                            <td>
+                                                <div style="display: flex; gap: 0.5rem;">
+                                                    <?php if ($of['nb_pending'] > 0): ?>
+                                                        <span class="status-badge badge-pending"><?= $of['nb_pending'] ?> En
+                                                            attente</span>
+                                                    <?php endif; ?>
+                                                    <?php if ($of['nb_synced'] > 0): ?>
+                                                        <span class="status-badge badge-synced"><?= $of['nb_synced'] ?> OK</span>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <!-- Détails -->
+                                        <tr id="detail-<?= htmlspecialchars($of['numero_of']) ?>" class="detail-row"
+                                            style="display: none;">
+                                            <td colspan="5" style="padding: 0;">
+                                                <div style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border);">
+                                                    <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+                                                        <thead>
+                                                            <tr style="text-align: left; color: var(--text-dim);">
+                                                                <th style="padding: 0.5rem;">Date</th>
+                                                                <th style="padding: 0.5rem;">Opérateur</th>
+                                                                <th style="padding: 0.5rem; text-align: right;">Heures</th>
+                                                                <th style="padding: 0.5rem; text-align: center;">Sync</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <?php foreach ($detailsParOf[$of['numero_of']] ?? [] as $d): ?>
+                                                                <tr>
+                                                                    <td style="padding: 0.5rem;">
+                                                                        <?= date('d/m/Y', strtotime($d['date_pointage'])) ?></td>
+                                                                    <td style="padding: 0.5rem;">
+                                                                        <?= htmlspecialchars($d['prenom'] . ' ' . $d['nom']) ?></td>
+                                                                    <td
+                                                                        style="padding: 0.5rem; text-align: right; font-weight: 600;">
+                                                                        <?= number_format($d['heures'], 2) ?>h</td>
+                                                                    <td style="padding: 0.5rem; text-align: center;">
+                                                                        <?= $d['synced_bc'] ? '<span style="color:var(--success)">✓</span>' : '<span style="color:var(--text-dim)">—</span>' ?>
+                                                                    </td>
+                                                                </tr>
+                                                            <?php endforeach; ?>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Sync Action -->
+                    <?php if ($totalPending > 0): ?>
+                        <div id="syncFooter"
+                            style="margin-top: 2.5rem; display: none; align-items: center; justify-content: space-between; padding: 1.5rem; background: rgba(14, 165, 233, 0.05); border-radius: var(--radius-lg); border: 1px solid rgba(14, 165, 233, 0.2);">
+                            <div>
+                                <p style="font-weight: 700; color: var(--accent-cyan);">Synchronisation avec Business
+                                    Central</p>
+                                <p style="font-size: 0.8rem; color: var(--text-muted);"><span id="syncCount">0</span>
+                                    pointage(s) sélectionné(s)</p>
+                            </div>
+                            <button type="submit" class="btn btn-primary"
+                                onclick="return confirm('Lancer la synchronisation vers Business Central ?')">
+                                Valider et Synchroniser →
+                            </button>
+                        </div>
+                    <?php endif; ?>
+
+                    <div id="hiddenInputsContainer"></div>
+                </form>
+
+                <!-- Historique -->
+                <?php if (!empty($syncLogs)): ?>
+                    <div style="margin-top: 4rem;">
+                        <h4
+                            style="color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; margin-bottom: 1.5rem;">
+                            Dernières Synchronisations</h4>
+                        <div class="glass" style="border-radius: var(--radius-md); padding: 1rem;">
+                            <?php foreach ($syncLogs as $log): ?>
+                                <div
+                                    style="display: flex; justify-content: space-between; padding: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 0.85rem;">
+                                    <span><?= date('d/m H:i', strtotime($log['created_at'])) ?></span>
+                                    <span style="font-weight: 600;"><?= $log['nb_pointages'] ?> pointage(s)</span>
+                                    <span
+                                        style="color: <?= $log['status'] === 'success' ? 'var(--success)' : 'var(--error)' ?>"><?= strtoupper($log['status']) ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </main>
     </div>
 
     <script>
         function toggleDetail(id) {
-            const row = document.getElementById(id);
-            row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+            const el = document.getElementById(id);
+            el.style.display = el.style.display === 'none' ? 'table-row' : 'none';
         }
 
         function toggleAll(source) {
-            document.querySelectorAll('.of-check').forEach(cb => {
-                cb.checked = source.checked;
-            });
+            document.querySelectorAll('.of-check').forEach(cb => cb.checked = source.checked);
             updateHiddenInputs();
         }
 
         function updateHiddenInputs() {
             const container = document.getElementById('hiddenInputsContainer');
+            const footer = document.getElementById('syncFooter');
+            const countEl = document.getElementById('syncCount');
             container.innerHTML = '';
-            let count = 0;
 
+            let allIds = [];
             document.querySelectorAll('.of-check:checked').forEach(cb => {
-                const ids = cb.dataset.ids.split(',');
-                ids.forEach(id => {
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'pointage_ids[]';
-                    input.value = id;
-                    container.appendChild(input);
-                    count++;
-                });
+                const ids = cb.getAttribute('data-ids').split(',');
+                allIds = allIds.concat(ids);
             });
 
-            const syncContainer = document.getElementById('syncContainer');
-            const syncCount = document.getElementById('syncCount');
+            allIds.forEach(id => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'pointage_ids[]';
+                input.value = id;
+                container.appendChild(input);
+            });
 
-            if (syncContainer) {
-                syncContainer.style.display = count > 0 ? 'block' : 'none';
-                if (syncCount) syncCount.textContent = count;
+            if (footer) {
+                footer.style.display = allIds.length > 0 ? 'flex' : 'none';
+                countEl.textContent = allIds.length;
             }
         }
     </script>
