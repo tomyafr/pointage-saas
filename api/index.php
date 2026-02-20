@@ -156,7 +156,7 @@ $isLoggedIn = isset($_SESSION['user_id']);
 <body class="login-page">
     <div class="login-card animate-in">
         <div class="login-header">
-            <div class="brand-icon"><img src="assets/logo-raoul-lenoir.png" alt="Raoul Lenoir"></div>
+            <div class="brand-icon"><img src="assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir"></div>
             <h1 class="login-title"><span class="text-gradient">Raoul Lenoir</span></h1>
             <p class="login-subtitle">Système de Pointage Industriel</p>
         </div>
