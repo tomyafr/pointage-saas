@@ -26,7 +26,7 @@ if ($filterWeek === 'current') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     if ($_POST['action'] === 'sync_bc') {
         $pointageIds = $_POST['pointage_ids'] ?? [];
-        
+
         if (empty($pointageIds)) {
             $message = 'Aucun pointage sélectionné pour la synchronisation.';
             $messageType = 'error';
@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             ");
             $stmt->execute($pointageIds);
             $toSync = $stmt->fetchAll();
-            
+
             if (empty($toSync)) {
                 $message = 'Tous les pointages sélectionnés sont déjà synchronisés.';
                 $messageType = 'info';
@@ -49,25 +49,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 // Préparer les données pour Business Central
                 $bcPayload = prepareBCPayload($toSync);
                 $result = sendToBCAPI($bcPayload);
-                
+
                 if ($result['success']) {
                     // Marquer comme synchronisé
                     $syncIds = array_column($toSync, 'id');
                     $placeholders2 = implode(',', array_fill(0, count($syncIds), '?'));
-                    $stmt = $db->prepare("UPDATE pointages SET synced_bc = 1, synced_at = NOW() WHERE id IN ($placeholders2)");
+                    $stmt = $db->prepare("UPDATE pointages SET synced_bc = TRUE, synced_at = NOW() WHERE id IN ($placeholders2)");
                     $stmt->execute($syncIds);
-                    
+
                     // Log
                     $stmt = $db->prepare('INSERT INTO sync_log (chef_id, nb_pointages, status, response_data) VALUES (?, ?, ?, ?)');
                     $stmt->execute([$_SESSION['user_id'], count($syncIds), 'success', json_encode($result)]);
-                    
+
                     $message = "✓ " . count($syncIds) . " pointage(s) synchronisé(s) avec Business Central.";
                     $messageType = 'success';
                 } else {
                     // Log erreur
                     $stmt = $db->prepare('INSERT INTO sync_log (chef_id, nb_pointages, status, response_data) VALUES (?, ?, ?, ?)');
                     $stmt->execute([$_SESSION['user_id'], count($toSync), 'error', json_encode($result)]);
-                    
+
                     $message = "Erreur de synchronisation : " . ($result['error'] ?? 'Erreur inconnue');
                     $messageType = 'error';
                 }
@@ -85,8 +85,8 @@ $query = '
         COUNT(p.id) as nb_pointages,
         MIN(p.date_pointage) as premiere_date,
         MAX(p.date_pointage) as derniere_date,
-        SUM(CASE WHEN p.synced_bc = 1 THEN 1 ELSE 0 END) as nb_synced,
-        SUM(CASE WHEN p.synced_bc = 0 THEN 1 ELSE 0 END) as nb_pending
+        SUM(CASE WHEN p.synced_bc IS TRUE THEN 1 ELSE 0 END) as nb_synced,
+        SUM(CASE WHEN p.synced_bc IS FALSE THEN 1 ELSE 0 END) as nb_pending
     FROM pointages p
     WHERE p.date_pointage BETWEEN ? AND ?
 ';
@@ -130,7 +130,8 @@ $syncLogs = $stmt->fetchAll();
 
 // ----- Fonctions Business Central -----
 
-function prepareBCPayload($pointages) {
+function prepareBCPayload($pointages)
+{
     $journalLines = [];
     foreach ($pointages as $p) {
         $journalLines[] = [
@@ -145,7 +146,8 @@ function prepareBCPayload($pointages) {
     return ['journalLines' => $journalLines];
 }
 
-function sendToBCAPI($payload) {
+function sendToBCAPI($payload)
+{
     // ========================================
     // INTÉGRATION MICROSOFT BUSINESS CENTRAL
     // ========================================
@@ -162,10 +164,10 @@ function sendToBCAPI($payload) {
     // En mode SIMULATION (tant que BC n'est pas configuré), 
     // les données sont marquées comme synchronisées localement.
     // ========================================
-    
+
     // --- Mode simulation (à désactiver en production) ---
     $simulationMode = true;
-    
+
     if ($simulationMode) {
         // Simule une réponse réussie
         return [
@@ -175,7 +177,7 @@ function sendToBCAPI($payload) {
             'data' => $payload,
         ];
     }
-    
+
     // --- Mode production ---
     try {
         // 1. Obtenir le token OAuth2
@@ -185,7 +187,7 @@ function sendToBCAPI($payload) {
             'client_secret' => BC_CLIENT_SECRET,
             'scope' => BC_SCOPE,
         ];
-        
+
         $ch = curl_init(BC_TOKEN_URL);
         curl_setopt_array($ch, [
             CURLOPT_POST => true,
@@ -195,16 +197,16 @@ function sendToBCAPI($payload) {
         ]);
         $tokenResponse = json_decode(curl_exec($ch), true);
         curl_close($ch);
-        
+
         if (!isset($tokenResponse['access_token'])) {
             return ['success' => false, 'error' => 'Impossible d\'obtenir le token BC'];
         }
-        
+
         $accessToken = $tokenResponse['access_token'];
-        
+
         // 2. Envoyer chaque ligne au journal BC
         $endpoint = BC_BASE_URL . '/companies(' . BC_COMPANY_ID . ')/journals';
-        
+
         foreach ($payload['journalLines'] as $line) {
             $ch = curl_init($endpoint);
             curl_setopt_array($ch, [
@@ -220,7 +222,7 @@ function sendToBCAPI($payload) {
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
-            
+
             if ($httpCode >= 400) {
                 return [
                     'success' => false,
@@ -229,9 +231,9 @@ function sendToBCAPI($payload) {
                 ];
             }
         }
-        
+
         return ['success' => true, 'mode' => 'production'];
-        
+
     } catch (Exception $e) {
         return ['success' => false, 'error' => $e->getMessage()];
     }
@@ -239,6 +241,7 @@ function sendToBCAPI($payload) {
 ?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -246,6 +249,7 @@ function sendToBCAPI($payload) {
     <title>Chef d'atelier - <?= APP_NAME ?></title>
     <link rel="stylesheet" href="assets/style.css">
 </head>
+
 <body>
     <div class="app-container wide">
         <!-- Header -->
@@ -258,15 +262,16 @@ function sendToBCAPI($payload) {
                 </div>
             </div>
             <div style="display:flex; align-items:center; gap:8px;">
-                <span class="user-badge"><?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?></span>
+                <span
+                    class="user-badge"><?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?></span>
                 <a href="logout.php" class="btn-logout">Quitter</a>
             </div>
         </header>
-        
+
         <?php if ($message): ?>
             <div class="alert alert-<?= $messageType ?>"><?= htmlspecialchars($message) ?></div>
         <?php endif; ?>
-        
+
         <!-- Stats -->
         <div class="stats-grid">
             <div class="stat-card">
@@ -286,33 +291,35 @@ function sendToBCAPI($payload) {
                 <div class="stat-label">Synchronisés</div>
             </div>
         </div>
-        
+
         <!-- Filtres -->
         <div class="filter-bar">
-            <select class="form-input" onchange="window.location='chef.php?week='+this.value+'&of=<?= urlencode($filterOf) ?>'">
+            <select class="form-input"
+                onchange="window.location='chef.php?week='+this.value+'&of=<?= urlencode($filterOf) ?>'">
                 <option value="current" <?= $filterWeek === 'current' ? 'selected' : '' ?>>Semaine en cours</option>
                 <option value="last" <?= $filterWeek === 'last' ? 'selected' : '' ?>>Semaine dernière</option>
             </select>
             <form method="GET" style="display:flex;gap:8px;flex:1;">
                 <input type="hidden" name="week" value="<?= htmlspecialchars($filterWeek) ?>">
-                <input type="text" name="of" class="form-input" placeholder="Filtrer par OF..." value="<?= htmlspecialchars($filterOf) ?>">
+                <input type="text" name="of" class="form-input" placeholder="Filtrer par OF..."
+                    value="<?= htmlspecialchars($filterOf) ?>">
             </form>
-            <a href="export-excel.php?week=<?= urlencode($filterWeek) ?>&of=<?= urlencode($filterOf) ?>" 
-               class="btn btn-secondary" 
-               style="width:auto;padding:10px 18px;font-size:0.75rem;white-space:nowrap;">
+            <a href="export-excel.php?week=<?= urlencode($filterWeek) ?>&of=<?= urlencode($filterOf) ?>"
+                class="btn btn-secondary" style="width:auto;padding:10px 18px;font-size:0.75rem;white-space:nowrap;">
                 📊 Export Excel
             </a>
         </div>
-        
+
         <!-- Tableau des OF -->
         <form method="POST" id="syncForm">
             <input type="hidden" name="action" value="sync_bc">
-            
+
             <div class="card">
                 <div class="card-title">
-                    Récapitulatif par OF — <?= date('d/m', strtotime($dateDebut)) ?> au <?= date('d/m/Y', strtotime($dateFin)) ?>
+                    Récapitulatif par OF — <?= date('d/m', strtotime($dateDebut)) ?> au
+                    <?= date('d/m/Y', strtotime($dateFin)) ?>
                 </div>
-                
+
                 <?php if (empty($ofsData)): ?>
                     <div class="empty-state">
                         <div class="empty-state-icon">📊</div>
@@ -333,153 +340,157 @@ function sendToBCAPI($payload) {
                         </thead>
                         <tbody>
                             <?php foreach ($ofsData as $of): ?>
-                            <tr onclick="toggleDetail('detail-<?= htmlspecialchars($of['numero_of']) ?>')" style="cursor:pointer;">
-                                <td onclick="event.stopPropagation();">
-                                    <?php if ($of['nb_pending'] > 0): ?>
-                                    <?php 
-                                        $pendingIds = [];
-                                        foreach ($detailsParOf[$of['numero_of']] ?? [] as $d) {
-                                            if (!$d['synced_bc']) $pendingIds[] = $d['id'];
-                                        }
-                                    ?>
-                                    <input type="checkbox" class="sync-check of-check" 
-                                           data-ids="<?= implode(',', $pendingIds) ?>"
-                                           onchange="updateHiddenInputs()">
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <span class="of-number"><?= htmlspecialchars($of['numero_of']) ?></span>
-                                </td>
-                                <td>
-                                    <span class="of-hours"><?= number_format($of['total_heures'], 2) ?>h</span>
-                                </td>
-                                <td><?= $of['nb_operateurs'] ?></td>
-                                <td>
-                                    <?php if ($of['nb_pending'] > 0): ?>
-                                        <span class="badge badge-pending"><?= $of['nb_pending'] ?> en attente</span>
-                                    <?php endif; ?>
-                                    <?php if ($of['nb_synced'] > 0): ?>
-                                        <span class="badge badge-synced"><?= $of['nb_synced'] ?> sync</span>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                            <!-- Détails cachés -->
-                            <tr id="detail-<?= htmlspecialchars($of['numero_of']) ?>" style="display:none;">
-                                <td colspan="5" style="padding:0 10px 14px 40px; background:var(--bg-secondary);">
-                                    <table class="week-table" style="margin-top:8px;">
-                                        <thead>
-                                            <tr>
-                                                <th>Date</th>
-                                                <th>Opérateur</th>
-                                                <th style="text-align:right;">Heures</th>
-                                                <th>Sync</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <?php foreach ($detailsParOf[$of['numero_of']] ?? [] as $d): ?>
-                                            <tr>
-                                                <td><?= date('d/m', strtotime($d['date_pointage'])) ?></td>
-                                                <td><?= htmlspecialchars($d['prenom'] . ' ' . $d['nom']) ?></td>
-                                                <td class="hours-cell" style="text-align:right;"><?= number_format($d['heures'], 2) ?>h</td>
-                                                <td>
-                                                    <?php if ($d['synced_bc']): ?>
-                                                        <span style="color:var(--success);">✓</span>
-                                                    <?php else: ?>
-                                                        <span style="color:var(--text-muted);">—</span>
-                                                    <?php endif; ?>
-                                                </td>
-                                            </tr>
-                                            <?php endforeach; ?>
-                                        </tbody>
-                                    </table>
-                                </td>
-                            </tr>
+                                <tr onclick="toggleDetail('detail-<?= htmlspecialchars($of['numero_of']) ?>')"
+                                    style="cursor:pointer;">
+                                    <td onclick="event.stopPropagation();">
+                                        <?php if ($of['nb_pending'] > 0): ?>
+                                            <?php
+                                            $pendingIds = [];
+                                            foreach ($detailsParOf[$of['numero_of']] ?? [] as $d) {
+                                                if (!$d['synced_bc'])
+                                                    $pendingIds[] = $d['id'];
+                                            }
+                                            ?>
+                                            <input type="checkbox" class="sync-check of-check"
+                                                data-ids="<?= implode(',', $pendingIds) ?>" onchange="updateHiddenInputs()">
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <span class="of-number"><?= htmlspecialchars($of['numero_of']) ?></span>
+                                    </td>
+                                    <td>
+                                        <span class="of-hours"><?= number_format($of['total_heures'], 2) ?>h</span>
+                                    </td>
+                                    <td><?= $of['nb_operateurs'] ?></td>
+                                    <td>
+                                        <?php if ($of['nb_pending'] > 0): ?>
+                                            <span class="badge badge-pending"><?= $of['nb_pending'] ?> en attente</span>
+                                        <?php endif; ?>
+                                        <?php if ($of['nb_synced'] > 0): ?>
+                                            <span class="badge badge-synced"><?= $of['nb_synced'] ?> sync</span>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
+                                <!-- Détails cachés -->
+                                <tr id="detail-<?= htmlspecialchars($of['numero_of']) ?>" style="display:none;">
+                                    <td colspan="5" style="padding:0 10px 14px 40px; background:var(--bg-secondary);">
+                                        <table class="week-table" style="margin-top:8px;">
+                                            <thead>
+                                                <tr>
+                                                    <th>Date</th>
+                                                    <th>Opérateur</th>
+                                                    <th style="text-align:right;">Heures</th>
+                                                    <th>Sync</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($detailsParOf[$of['numero_of']] ?? [] as $d): ?>
+                                                    <tr>
+                                                        <td><?= date('d/m', strtotime($d['date_pointage'])) ?></td>
+                                                        <td><?= htmlspecialchars($d['prenom'] . ' ' . $d['nom']) ?></td>
+                                                        <td class="hours-cell" style="text-align:right;">
+                                                            <?= number_format($d['heures'], 2) ?>h</td>
+                                                        <td>
+                                                            <?php if ($d['synced_bc']): ?>
+                                                                <span style="color:var(--success);">✓</span>
+                                                            <?php else: ?>
+                                                                <span style="color:var(--text-muted);">—</span>
+                                                            <?php endif; ?>
+                                                        </td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
                 <?php endif; ?>
             </div>
-            
+
             <!-- Bouton sync BC -->
             <?php if ($totalPending > 0): ?>
-            <div id="syncContainer" style="display:none;">
-                <button type="submit" class="btn btn-success" id="syncBtn" onclick="return confirm('Confirmer la synchronisation vers Business Central ?')">
-                    ↑ Synchroniser vers Business Central (<span id="syncCount">0</span> pointages)
-                </button>
-            </div>
+                <div id="syncContainer" style="display:none;">
+                    <button type="submit" class="btn btn-success" id="syncBtn"
+                        onclick="return confirm('Confirmer la synchronisation vers Business Central ?')">
+                        ↑ Synchroniser vers Business Central (<span id="syncCount">0</span> pointages)
+                    </button>
+                </div>
             <?php endif; ?>
-            
+
             <div id="hiddenInputsContainer"></div>
         </form>
-        
+
         <!-- Historique des syncs -->
         <?php if (!empty($syncLogs)): ?>
-        <div class="card" style="margin-top:16px;">
-            <div class="card-title">Dernières synchronisations</div>
-            <table class="week-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Pointages</th>
-                        <th>Statut</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($syncLogs as $log): ?>
-                    <tr>
-                        <td><?= date('d/m H:i', strtotime($log['created_at'])) ?></td>
-                        <td><?= $log['nb_pointages'] ?></td>
-                        <td>
-                            <span class="badge <?= $log['status'] === 'success' ? 'badge-synced' : 'badge-pending' ?>">
-                                <?= $log['status'] === 'success' ? '✓ OK' : '✕ Erreur' ?>
-                            </span>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+            <div class="card" style="margin-top:16px;">
+                <div class="card-title">Dernières synchronisations</div>
+                <table class="week-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Pointages</th>
+                            <th>Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($syncLogs as $log): ?>
+                            <tr>
+                                <td><?= date('d/m H:i', strtotime($log['created_at'])) ?></td>
+                                <td><?= $log['nb_pointages'] ?></td>
+                                <td>
+                                    <span class="badge <?= $log['status'] === 'success' ? 'badge-synced' : 'badge-pending' ?>">
+                                        <?= $log['status'] === 'success' ? '✓ OK' : '✕ Erreur' ?>
+                                    </span>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         <?php endif; ?>
     </div>
-    
+
     <script>
-    function toggleDetail(id) {
-        const row = document.getElementById(id);
-        row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
-    }
-    
-    function toggleAll(source) {
-        document.querySelectorAll('.of-check').forEach(cb => {
-            cb.checked = source.checked;
-        });
-        updateHiddenInputs();
-    }
-    
-    function updateHiddenInputs() {
-        const container = document.getElementById('hiddenInputsContainer');
-        container.innerHTML = '';
-        let count = 0;
-        
-        document.querySelectorAll('.of-check:checked').forEach(cb => {
-            const ids = cb.dataset.ids.split(',');
-            ids.forEach(id => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'pointage_ids[]';
-                input.value = id;
-                container.appendChild(input);
-                count++;
-            });
-        });
-        
-        const syncContainer = document.getElementById('syncContainer');
-        const syncCount = document.getElementById('syncCount');
-        
-        if (syncContainer) {
-            syncContainer.style.display = count > 0 ? 'block' : 'none';
-            if (syncCount) syncCount.textContent = count;
+        function toggleDetail(id) {
+            const row = document.getElementById(id);
+            row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
         }
-    }
+
+        function toggleAll(source) {
+            document.querySelectorAll('.of-check').forEach(cb => {
+                cb.checked = source.checked;
+            });
+            updateHiddenInputs();
+        }
+
+        function updateHiddenInputs() {
+            const container = document.getElementById('hiddenInputsContainer');
+            container.innerHTML = '';
+            let count = 0;
+
+            document.querySelectorAll('.of-check:checked').forEach(cb => {
+                const ids = cb.dataset.ids.split(',');
+                ids.forEach(id => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'pointage_ids[]';
+                    input.value = id;
+                    container.appendChild(input);
+                    count++;
+                });
+            });
+
+            const syncContainer = document.getElementById('syncContainer');
+            const syncCount = document.getElementById('syncCount');
+
+            if (syncContainer) {
+                syncContainer.style.display = count > 0 ? 'block' : 'none';
+                if (syncCount) syncCount.textContent = count;
+            }
+        }
     </script>
 </body>
+
 </html>

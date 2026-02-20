@@ -28,13 +28,13 @@ $action = $_GET['action'] ?? '';
 
 try {
     switch ($action) {
-        
+
         // Liste des pointages (filtrés par date)
         case 'pointages':
             $dateFrom = $_GET['date_from'] ?? date('Y-m-d', strtotime('monday this week'));
             $dateTo = $_GET['date_to'] ?? date('Y-m-d', strtotime('sunday this week'));
-            $syncedOnly = isset($_GET['synced']) ? (int)$_GET['synced'] : null;
-            
+            $syncedOnly = isset($_GET['synced']) ? (int) $_GET['synced'] : null;
+
             $query = '
                 SELECT p.id, p.numero_of, p.heures, p.date_pointage, p.synced_bc,
                        p.created_at, p.updated_at,
@@ -44,18 +44,18 @@ try {
                 WHERE p.date_pointage BETWEEN ? AND ?
             ';
             $params = [$dateFrom, $dateTo];
-            
+
             if ($syncedOnly !== null) {
                 $query .= ' AND p.synced_bc = ?';
                 $params[] = $syncedOnly;
             }
-            
+
             $query .= ' ORDER BY p.date_pointage, p.numero_of';
-            
+
             $stmt = $db->prepare($query);
             $stmt->execute($params);
             $data = $stmt->fetchAll();
-            
+
             echo json_encode([
                 'success' => true,
                 'count' => count($data),
@@ -64,7 +64,7 @@ try {
                 'pointages' => $data,
             ]);
             break;
-        
+
         // Pointages pour un OF spécifique
         case 'pointages_of':
             $of = $_GET['of'] ?? '';
@@ -73,7 +73,7 @@ try {
                 echo json_encode(['error' => 'Paramètre "of" requis']);
                 exit;
             }
-            
+
             $stmt = $db->prepare('
                 SELECT p.id, p.heures, p.date_pointage, p.synced_bc,
                        u.nom as operateur_nom, u.prenom as operateur_prenom
@@ -84,9 +84,9 @@ try {
             ');
             $stmt->execute([$of]);
             $data = $stmt->fetchAll();
-            
+
             $totalHeures = array_sum(array_column($data, 'heures'));
-            
+
             echo json_encode([
                 'success' => true,
                 'numero_of' => $of,
@@ -95,7 +95,7 @@ try {
                 'details' => $data,
             ]);
             break;
-        
+
         // Marquer des pointages comme synchronisés (callback de BC)
         case 'mark_synced':
             if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -103,44 +103,44 @@ try {
                 echo json_encode(['error' => 'Méthode POST requise']);
                 exit;
             }
-            
+
             $body = json_decode(file_get_contents('php://input'), true);
             $ids = $body['ids'] ?? [];
-            
+
             if (empty($ids) || !is_array($ids)) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Paramètre "ids" (array) requis']);
                 exit;
             }
-            
+
             $ids = array_map('intval', $ids);
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
-            
-            $stmt = $db->prepare("UPDATE pointages SET synced_bc = 1, synced_at = NOW() WHERE id IN ($placeholders)");
+
+            $stmt = $db->prepare("UPDATE pointages SET synced_bc = TRUE, synced_at = NOW() WHERE id IN ($placeholders)");
             $stmt->execute($ids);
-            
+
             echo json_encode([
                 'success' => true,
                 'updated' => $stmt->rowCount(),
             ]);
             break;
-        
+
         // Liste des utilisateurs actifs
         case 'users':
             $stmt = $db->prepare('SELECT id, nom, prenom, role FROM users WHERE actif = 1 ORDER BY nom');
             $stmt->execute();
-            
+
             echo json_encode([
                 'success' => true,
                 'users' => $stmt->fetchAll(),
             ]);
             break;
-            
+
         // Résumé hebdomadaire (format adapté BC)
         case 'weekly_summary':
             $dateFrom = $_GET['date_from'] ?? date('Y-m-d', strtotime('monday this week'));
             $dateTo = $_GET['date_to'] ?? date('Y-m-d', strtotime('sunday this week'));
-            
+
             $stmt = $db->prepare('
                 SELECT 
                     p.numero_of as productionOrderNo,
@@ -154,7 +154,7 @@ try {
                 ORDER BY p.numero_of
             ');
             $stmt->execute([$dateFrom, $dateTo]);
-            
+
             echo json_encode([
                 'success' => true,
                 'format' => 'bc_compatible',
@@ -162,7 +162,7 @@ try {
                 'summary' => $stmt->fetchAll(),
             ]);
             break;
-        
+
         default:
             http_response_code(400);
             echo json_encode([
@@ -170,7 +170,7 @@ try {
                 'available_actions' => ['pointages', 'pointages_of', 'mark_synced', 'users', 'weekly_summary'],
             ]);
     }
-    
+
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Erreur serveur', 'message' => 'Erreur base de données']);

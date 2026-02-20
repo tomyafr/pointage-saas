@@ -28,30 +28,35 @@ define('SESSION_TIMEOUT', 28800); // 8 heures
 // Timezone
 date_default_timezone_set('Europe/Paris');
 
-// Connexion PDO
-function getDB() {
+// Connexion PDO (PostgreSQL pour Vercel)
+function getDB()
+{
     static $pdo = null;
     if ($pdo === null) {
         try {
-            $pdo = new PDO(
-                'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
-                DB_USER,
-                DB_PASS,
-                [
-                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                    PDO::ATTR_EMULATE_PREPARES => false,
-                ]
-            );
+            // Utilisation des variables d'environnement Vercel Postgres
+            $host = getenv('POSTGRES_HOST');
+            $db = getenv('POSTGRES_DATABASE');
+            $user = getenv('POSTGRES_USER');
+            $pass = getenv('POSTGRES_PASSWORD');
+
+            $dsn = "pgsql:host=$host;port=5432;dbname=$db;sslmode=require";
+
+            $pdo = new PDO($dsn, $user, $pass, [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ]);
         } catch (PDOException $e) {
-            die('Erreur de connexion à la base de données.');
+            die('Erreur de connexion à la base de données PostgreSQL : ' . $e->getMessage());
         }
     }
     return $pdo;
 }
 
 // Démarrer la session sécurisée
-function startSecureSession() {
+function startSecureSession()
+{
     if (session_status() === PHP_SESSION_NONE) {
         ini_set('session.cookie_httponly', 1);
         ini_set('session.cookie_secure', 1);
@@ -61,7 +66,8 @@ function startSecureSession() {
 }
 
 // Vérifier l'authentification
-function requireAuth($role = null) {
+function requireAuth($role = null)
+{
     startSecureSession();
     if (!isset($_SESSION['user_id'])) {
         header('Location: index.php');
@@ -74,21 +80,22 @@ function requireAuth($role = null) {
 }
 
 // Obtenir la semaine courante (lundi à dimanche)
-function getCurrentWeekDates() {
+function getCurrentWeekDates()
+{
     $today = new DateTime();
-    $dayOfWeek = (int)$today->format('N'); // 1=lundi, 7=dimanche
+    $dayOfWeek = (int) $today->format('N'); // 1=lundi, 7=dimanche
     $monday = clone $today;
     $monday->modify('-' . ($dayOfWeek - 1) . ' days');
     $sunday = clone $monday;
     $sunday->modify('+6 days');
-    
+
     $dates = [];
     $current = clone $monday;
     while ($current <= $sunday) {
         $dates[] = $current->format('Y-m-d');
         $current->modify('+1 day');
     }
-    
+
     return [
         'monday' => $monday->format('Y-m-d'),
         'sunday' => $sunday->format('Y-m-d'),
