@@ -27,7 +27,7 @@ define('BC_SCOPE', 'https://api.businesscentral.dynamics.com/.default');
 
 // Application
 define('APP_NAME', 'Pointage Atelier');
-define('APP_VERSION', '1.0.0');
+define('APP_VERSION', '2.0.0');
 define('SESSION_TIMEOUT', 28800); // 8 heures
 
 // Timezone

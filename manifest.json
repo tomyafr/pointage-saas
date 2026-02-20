@@ -1,12 +1,16 @@
 {
-    "name": "Pointage Atelier",
-    "short_name": "Pointage",
-    "description": "Saisie des heures par OF",
+    "name": "Raoul Lenoir — Pointage Industriel",
+    "short_name": "Pointage RL",
+    "description": "Système de pointage intelligent par Ordre de Fabrication — Raoul Lenoir SAS",
     "start_url": "/index.php",
     "display": "standalone",
-    "background_color": "#0a0f1a",
-    "theme_color": "#0a0f1a",
+    "background_color": "#020617",
+    "theme_color": "#ffb300",
     "orientation": "portrait",
+    "categories": [
+        "business",
+        "productivity"
+    ],
     "icons": [
         {
             "src": "assets/icon-192.png",
