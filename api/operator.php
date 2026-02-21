@@ -87,9 +87,9 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Espace Opérateur | Raoul Lenoir</title>
-    <link rel="stylesheet" href="assets/style.css">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="assets/icon-192.png">
+    <link rel="stylesheet" href="/assets/style.css">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/assets/icon-192.png">
     <meta name="theme-color" content="#020617">
     <style>
         .of-card { transition: var(--transition-smooth); }
@@ -122,7 +122,7 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div style="margin-bottom: 2.5rem;">
-                <div class="brand-icon" style="width: 180px; height: auto; margin: 0 0 1rem 0;"><img src="assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir"></div>
+                <div class="brand-icon" style="width: 180px; height: auto; margin: 0 0 1rem 0;"><img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir"></div>
                 <h2 style="font-size: 1.15rem;"><span class="text-gradient">Raoul Lenoir</span></h2>
                 <p style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 0.25rem;">Espace Opérateur</p>
             </div>
@@ -362,6 +362,6 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
         const ofInput = document.getElementById('ofInput');
         if (ofInput) ofInput.addEventListener('input', function() { this.value = this.value.toUpperCase(); });
     </script>
-    <script src="assets/notifications.js"></script>
+    <script src="/assets/notifications.js"></script>
 </body>
 </html>

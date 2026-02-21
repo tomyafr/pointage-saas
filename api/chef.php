@@ -221,9 +221,9 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Espace Chef d'Atelier | Raoul Lenoir</title>
-    <link rel="stylesheet" href="assets/style.css">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="assets/icon-192.png">
+    <link rel="stylesheet" href="/assets/style.css">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/assets/icon-192.png">
     <meta name="theme-color" content="#020617">
     <style>
         .of-row {
@@ -305,7 +305,7 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
         <aside class="sidebar" id="sidebar">
             <div style="margin-bottom: 2.5rem;">
                 <div class="brand-icon" style="width: 180px; height: auto; margin: 0 0 1rem 0;"><img
-                        src="assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir"></div>
+                        src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir"></div>
                 <h2 style="font-size: 1.15rem;"><span class="text-gradient">Raoul Lenoir</span></h2>
                 <p
                     style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 0.25rem;">
@@ -355,7 +355,8 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
                     style="width: 100%; margin-top: 1rem; color: var(--error); border-color: rgba(244, 63, 94, 0.15); font-size: 0.75rem; padding: 0.6rem;">
                     Se déconnecter
                 </a>
-                <a href="profile.php" class="btn btn-ghost" style="width: 100%; margin-top: 0.5rem; font-size: 0.75rem; padding: 0.6rem; text-decoration: none; color: inherit; border: 1px solid var(--glass-border);">
+                <a href="profile.php" class="btn btn-ghost"
+                    style="width: 100%; margin-top: 0.5rem; font-size: 0.75rem; padding: 0.6rem; text-decoration: none; color: inherit; border: 1px solid var(--glass-border);">
                     👤 Mon Profil
                 </a>
                 <button onclick="if(window.notificationManager) window.notificationManager.requestPermission()"
@@ -629,7 +630,7 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
             document.getElementById('sidebarOverlay').classList.toggle('open');
         }
     </script>
-    <script src="assets/notifications.js"></script>
+    <script src="/assets/notifications.js"></script>
 </body>
 
 </html>

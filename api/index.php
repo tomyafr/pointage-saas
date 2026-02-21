@@ -1,13 +1,12 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
-startSecureSession();
 
-$error = '';
-
-// Traitement de la déconnexion
+// Traitement de la déconnexion (avant tout démarrage de session)
 if (isset($_GET['logout'])) {
-    session_unset();
+    if (session_status() === PHP_SESSION_NONE) session_start();
+    $_SESSION = array();
     session_destroy();
+    
     if (isset($_COOKIE[session_name()])) {
         setcookie(session_name(), '', time() - 42000, '/');
     }
@@ -16,21 +15,24 @@ if (isset($_GET['logout'])) {
     exit;
 }
 
+startSecureSession();
+
+$error = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $db = getDB();
     $ip = $_SERVER['REMOTE_ADDR'];
 
-    // 1. Protection Brute Force : Vérifier les tentatives
+    // 1. Protection Brute Force
     $stmt = $db->prepare('SELECT attempts, last_attempt FROM login_attempts WHERE ip_address = ?');
     $stmt->execute([$ip]);
     $throttle = $stmt->fetch();
 
     if ($throttle && $throttle['attempts'] >= 5) {
         $last = strtotime($throttle['last_attempt']);
-        if (time() - $last < 900) { // Bloqué pendant 15 minutes
-            $error = "Trop de tentatives. Réessayez dans 15 minutes.";
+        if (time() - $last < 900) {
+            $error = "Trop de tentatives. Bloqué pendant 15 min.";
         } else {
-            // Réinitialiser après 15 min
             $db->prepare('DELETE FROM login_attempts WHERE ip_address = ?')->execute([$ip]);
             $throttle = null;
         }
@@ -48,7 +50,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user = $stmt->fetch();
 
             if ($user && password_verify($password, $user['password_hash'])) {
-                // Succès : Supprimer les tentatives échouées
                 $db->prepare('DELETE FROM login_attempts WHERE ip_address = ?')->execute([$ip]);
 
                 $_SESSION['user_id'] = $user['id'];
@@ -57,20 +58,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['login_time'] = time();
                 setSessionBackup();
-
+                
                 logAudit('LOGIN_SUCCESS', "User: $nom");
                 session_write_close();
 
                 header('Location: ' . ($user['role'] === 'chef' ? 'chef.php' : 'operator.php'));
                 exit;
             } else {
-                // Échec : Incrémenter les tentatives
                 if ($throttle) {
                     $db->prepare('UPDATE login_attempts SET attempts = attempts + 1, last_attempt = NOW() WHERE ip_address = ?')->execute([$ip]);
                 } else {
                     $db->prepare('INSERT INTO login_attempts (ip_address) VALUES (?)')->execute([$ip]);
                 }
-
+                
                 logAudit('LOGIN_FAILED', "IP: $ip, Identifiant: $nom");
                 $error = "Accès refusé. Vérifiez vos identifiants.";
             }
@@ -83,183 +83,99 @@ $isLoggedIn = isset($_SESSION['user_id']);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description"
-        content="Système de pointage intelligent pour Raoul Lenoir — Saisie des heures par Ordre de Fabrication">
     <title>Connexion | Raoul Lenoir — Pointage Industriel</title>
-    <link rel="stylesheet" href="assets/style.css">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="assets/icon-192.png">
-    <meta name="theme-color" content="#020617">
-    <style>
-        .demo-access {
-            margin-top: 2rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid var(--glass-border);
-        }
-
-        .demo-label {
-            text-align: center;
-            font-size: 0.7rem;
-            color: var(--text-dim);
-            text-transform: uppercase;
-            letter-spacing: 0.12em;
-            margin-bottom: 1rem;
-        }
-
-        .demo-chips {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 0.75rem;
-        }
-
-        .login-features {
-            display: flex;
-            gap: 2rem;
-            justify-content: center;
-            margin-top: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .login-feature {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.75rem;
-            color: var(--text-dim);
-        }
-
-        .login-feature-icon {
-            width: 28px;
-            height: 28px;
-            background: rgba(255, 255, 255, 0.04);
-            border: 1px solid var(--glass-border);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
-        }
-
-        .input-icon-wrapper {
-            position: relative;
-        }
-
-        .input-icon-wrapper .input {
-            padding-left: 3rem;
-        }
-
-        .input-icon {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 1.1rem;
-            opacity: 0.4;
-            pointer-events: none;
-        }
-    </style>
+    <link rel="stylesheet" href="/assets/style.css">
 </head>
-
-<body class="login-page">
-    <div class="login-card animate-in">
-        <div class="login-header">
-            <div class="brand-icon"><img src="assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir"></div>
-            <h1 class="login-title"><span class="text-gradient">Raoul Lenoir</span></h1>
+<body class="bg-main">
+    <div class="login-container">
+        <!-- Logo -->
+        <div class="login-header animate-in">
+            <div class="brand-icon" style="width: 220px; height: auto; margin: 0 auto 2rem auto;">
+                <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir">
+            </div>
+            <h1 class="login-title">Raoul Lenoir</h1>
             <p class="login-subtitle">Système de Pointage Industriel</p>
         </div>
 
         <?php if ($isLoggedIn): ?>
-            <div class="card glass text-center animate-in-delay-1">
-                <p style="color: var(--primary); margin-bottom: 0.5rem; font-size: 1.2rem; font-weight: 700;">
-                    Bienvenue, <?= htmlspecialchars($_SESSION['user_prenom']) ?>
-                </p>
-                <p style="color: var(--text-dim); margin-bottom: 2rem; font-size: 0.85rem;">
-                    Session active · <?= ucfirst($_SESSION['role']) ?>
-                </p>
-                <a href="<?= $_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php' ?>" class="btn btn-primary"
-                    style="width: 100%; margin-bottom: 1rem; height: 3.5rem; font-size: 1rem;">
-                    Accéder au Dashboard →
+            <!-- Welcome Screen -->
+            <div class="welcome-screen animate-in">
+                <h2 class="welcome-title">Bienvenue, <?= htmlspecialchars($_SESSION['user_prenom']) ?></h2>
+                <p class="welcome-text">Session active · <?= $_SESSION['role'] === 'chef' ? 'Administrateur' : 'Opérateur' ?></p>
+                
+                <a href="<?= $_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php' ?>" class="btn btn-primary" style="margin-top: 1.5rem; width: 100%; text-decoration: none; justify-content: center;">
+                    ACCÉDER AU DASHBOARD →
                 </a>
-                <a href="index.php?logout=1"
-                    style="color: var(--text-dim); font-size: 0.8rem; text-decoration: none; transition: var(--transition-fast);">
+                
+                <a href="?logout=1" class="btn btn-ghost" style="margin-top: 1rem; width: 100%; opacity: 0.7; text-decoration: none; justify-content: center; font-size: 0.8rem;">
                     Changer de compte
                 </a>
             </div>
         <?php else: ?>
+            <!-- Login Form -->
+            <form method="POST" class="login-card glass animate-in">
+                <?php if ($error): ?>
+                    <div class="alert alert-error">
+                        <span>⚠</span>
+                        <span><?= htmlspecialchars($error) ?></span>
+                    </div>
+                <?php endif; ?>
 
-            <?php if ($error): ?>
-                <div class="alert alert-error animate-in">
-                    <span>⚠</span>
-                    <span><?= htmlspecialchars($error) ?></span>
-                </div>
-            <?php endif; ?>
-
-            <form method="POST" autocomplete="off" class="card glass animate-in-delay-1">
                 <div class="form-group">
-                    <label class="label" for="nom">Identifiant</label>
-                    <div class="input-icon-wrapper">
+                    <label for="nom" class="label">Identifiant (NOM)</label>
+                    <div class="input-wrapper">
                         <span class="input-icon">👤</span>
-                        <input type="text" id="nom" name="nom" class="input" placeholder="NOM DE FAMILLE"
-                            autocapitalize="characters" autocomplete="username" required
-                            value="<?= htmlspecialchars($_POST['nom'] ?? '') ?>">
+                        <input type="text" name="nom" id="nom" class="input" placeholder="EX: LOTITO" required autocomplete="username">
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="label" for="password">Mot de passe</label>
-                    <div class="input-icon-wrapper">
+                    <label for="password" class="label">Mot de passe</label>
+                    <div class="input-wrapper">
                         <span class="input-icon">🔒</span>
-                        <input type="password" id="password" name="password" class="input"
-                            style="padding-left: 3rem; padding-right: 3.5rem;" placeholder="••••••••"
-                            autocomplete="current-password" required>
-                        <button type="button" id="togglePassword"
-                            style="position:absolute; right:1rem; top:50%; transform:translateY(-50%); background:none; border:none; color:var(--text-dim); cursor:pointer; font-size:1.1rem; transition: var(--transition-fast);"
-                            aria-label="Afficher/masquer le mot de passe">
-                            👁
-                        </button>
+                        <input type="password" name="password" id="password" class="input" placeholder="••••••••" required autocomplete="current-password">
+                        <button type="button" class="password-toggle" id="togglePassword">👁</button>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; height: 3.5rem; font-size: 0.95rem;">
+                <button type="submit" class="btn btn-primary login-btn">
                     Connexion Sécurisée →
                 </button>
 
                 <!-- Mode Démo désactivé pour la production -->
             </form>
-
-            <div class="login-features animate-in-delay-2">
-                <div class="login-feature">
-                    <div class="login-feature-icon">🔐</div>
-                    <span>Chiffrement BCrypt</span>
-                </div>
-                <div class="login-feature">
-                    <div class="login-feature-icon">☁️</div>
-                    <span>Cloud Sécurisé</span>
-                </div>
-                <div class="login-feature">
-                    <div class="login-feature-icon">📱</div>
-                    <span>PWA Mobile</span>
-                </div>
-            </div>
         <?php endif; ?>
 
-        <p class="animate-in-delay-3"
-            style="text-align:center; color: var(--text-dim); font-size: 0.7rem; margin-top: 2.5rem; font-family: var(--font-mono); letter-spacing: 1px;">
-            V<?= APP_VERSION ?> · <a href="https://www.118712.fr/professionnels/X0dXWVBRGgI" target="_blank"
-                rel="noopener" style="color: var(--text-dim); text-decoration: none;">RAOUL LENOIR SAS</a> ·
-            <?= date('Y') ?>
-        </p>
+        <div class="login-features animate-in-delay-2">
+            <div class="feature-item">
+                <span class="feature-icon">🛡️</span>
+                <span>Accès Sécurisé</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">📱</span>
+                <span>Mobile First</span>
+            </div>
+            <div class="feature-item">
+                <span class="feature-icon">⚡</span>
+                <span>Sync BC</span>
+            </div>
+        </div>
+
+        <div class="login-footer">
+            V<?= APP_VERSION ?> · RAOUL LENOIR SAS · <?= date('Y') ?>
+        </div>
     </div>
 
     <script>
+        // Toggle password visibility
         const togglePassword = document.querySelector('#togglePassword');
         const password = document.querySelector('#password');
-        if (togglePassword) {
-            togglePassword.addEventListener('click', function () {
+
+        if (togglePassword && password) {
+            togglePassword.addEventListener('click', function (e) {
                 const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
                 password.setAttribute('type', type);
                 this.textContent = type === 'password' ? '👁' : '🔒';
@@ -274,7 +190,6 @@ $isLoggedIn = isset($_SESSION['user_id']);
             });
         }
     </script>
-    <script src="assets/notifications.js"></script>
+    <script src="/assets/notifications.js"></script>
 </body>
-
 </html>
