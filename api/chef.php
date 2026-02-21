@@ -354,6 +354,11 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
                     style="width: 100%; margin-top: 1rem; color: var(--error); border-color: rgba(244, 63, 94, 0.15); font-size: 0.75rem; padding: 0.6rem;">
                     Se déconnecter
                 </a>
+                <button onclick="if(window.notificationManager) window.notificationManager.requestPermission()"
+                    class="btn btn-ghost"
+                    style="width: 100%; margin-top: 0.5rem; font-size: 0.65rem; border: none; opacity: 0.5;">
+                    🔔 Activer Notifications
+                </button>
             </div>
         </aside>
 
@@ -619,6 +624,7 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
             document.getElementById('sidebarOverlay').classList.toggle('open');
         }
     </script>
+    <script src="assets/notifications.js"></script>
 </body>
 
 </html>

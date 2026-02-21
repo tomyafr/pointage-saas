@@ -10,10 +10,10 @@
 
     --bg-main: #020617;
     --bg-elevated: #0c1222;
-    --bg-glass: rgba(15, 23, 42, 0.65);
-    --glass-border: rgba(255, 255, 255, 0.08);
-    --glass-border-hover: rgba(255, 255, 255, 0.15);
-    --glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 60%);
+    --bg-glass: rgba(15, 23, 42, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-border-hover: rgba(255, 255, 255, 0.2);
+    --glass-shine: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%, rgba(255, 255, 255, 0.05) 100%);
 
     --text-main: #f1f5f9;
     --text-muted: #94a3b8;
@@ -133,7 +133,13 @@ body::after {
     right: 0;
     height: 3px;
     background: linear-gradient(90deg, var(--primary), var(--accent-cyan), var(--accent-purple));
-    opacity: 0.8;
+    opacity: 0.6;
+    transition: var(--transition-smooth);
+}
+
+.card:hover::before {
+    opacity: 1;
+    height: 4px;
 }
 
 .card:hover {
@@ -237,9 +243,9 @@ h4 {
 }
 
 .btn-primary:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 15px 35px -5px rgba(255, 179, 0, 0.6), var(--shadow-glow);
-    filter: brightness(1.1);
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 20px 40px -5px rgba(255, 179, 0, 0.5), var(--shadow-glow);
+    filter: brightness(1.15);
 }
 
 .btn-primary:active {
@@ -431,10 +437,16 @@ h4 {
 }
 
 .stat-value {
-    font-size: 2rem;
+    font-size: 2.2rem;
     font-weight: 900;
     color: var(--primary);
     line-height: 1;
+    transition: var(--transition-smooth);
+}
+
+.stat-item:hover .stat-value {
+    transform: scale(1.1);
+    text-shadow: 0 0 20px var(--primary-glow);
 }
 
 /* ═══════════ WEEKLY PROGRESS BAR ═══════════ */

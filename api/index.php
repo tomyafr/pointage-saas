@@ -279,6 +279,7 @@ $isLoggedIn = isset($_SESSION['user_id']);
             });
         }
     </script>
+    <script src="assets/notifications.js"></script>
 </body>
 
 </html>
