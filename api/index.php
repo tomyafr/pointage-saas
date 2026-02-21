@@ -1,13 +1,11 @@
 <?php
 require_once __DIR__ . '/../includes/config.php';
 
-// Traitement de la déconnexion (avant tout démarrage de session)
+// Traitement de la déconnexion
 if (isset($_GET['logout'])) {
-    if (session_status() === PHP_SESSION_NONE)
-        session_start();
+    if (session_status() === PHP_SESSION_NONE) session_start();
     $_SESSION = array();
     session_destroy();
-
     if (isset($_COOKIE[session_name()])) {
         setcookie(session_name(), '', time() - 42000, '/');
     }
@@ -18,13 +16,20 @@ if (isset($_GET['logout'])) {
 
 startSecureSession();
 
+// REDIRECTION AUTOMATIQUE SI DÉJÀ CONNECTÉ (Plus rapide)
+if (isset($_SESSION['user_id'])) {
+    $target = ($_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php');
+    header('Location: ' . $target);
+    exit;
+}
+
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $db = getDB();
     $ip = $_SERVER['REMOTE_ADDR'];
 
-    // 1. Protection Brute Force
+    // Protection Brute Force
     $stmt = $db->prepare('SELECT attempts, last_attempt FROM login_attempts WHERE ip_address = ?');
     $stmt->execute([$ip]);
     $throttle = $stmt->fetch();
@@ -59,7 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['login_time'] = time();
                 setSessionBackup();
-
+                
                 logAudit('LOGIN_SUCCESS', "User: $nom");
                 session_write_close();
 
@@ -71,93 +76,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $db->prepare('INSERT INTO login_attempts (ip_address) VALUES (?)')->execute([$ip]);
                 }
-
+                
                 logAudit('LOGIN_FAILED', "IP: $ip, Identifiant: $nom");
                 $error = "Accès refusé. Vérifiez vos identifiants.";
             }
         }
     }
 }
-
-// Est-on déjà connecté ?
-$isLoggedIn = isset($_SESSION['user_id']);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Connexion | Raoul Lenoir — Pointage Industriel</title>
+    <title>Connexion | Raoul Lenoir</title>
     <link rel="stylesheet" href="/assets/style.css">
 </head>
-
 <body class="bg-main">
     <div class="login-page">
         <!-- Logo -->
         <div class="login-header animate-in">
-            <div class="brand-icon" style="width: 250px; height: auto; margin: 0 auto 1.5rem auto;">
-                <img src="../assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir"
-                    style="filter: brightness(0) saturate(100%) invert(73%) sepia(86%) saturate(1063%) hue-rotate(358deg) brightness(101%) contrast(106%);">
+            <div class="brand-icon" style="width: 280px; height: auto; margin: 0 auto 1.5rem auto;">
+                <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir" style="filter: brightness(0) saturate(100%) invert(73%) sepia(86%) saturate(1063%) hue-rotate(358deg) brightness(101%) contrast(106%);">
             </div>
             <h1 class="login-title" style="color: #ffb300;">Raoul Lenoir</h1>
             <p class="login-subtitle">Système de Pointage Industriel</p>
         </div>
 
-        <?php if ($isLoggedIn): ?>
-            <!-- Welcome Screen -->
-            <div class="welcome-screen animate-in">
-                <h2 class="welcome-title">Bienvenue, <?= htmlspecialchars($_SESSION['user_prenom']) ?></h2>
-                <p class="welcome-text">Session active ·
-                    <?= $_SESSION['role'] === 'chef' ? 'Administrateur' : 'Opérateur' ?>
-                </p>
+        <!-- Login Form (Toujours affiché si non connecté) -->
+        <form method="POST" class="login-card glass animate-in">
+            <?php if ($error): ?>
+                <div class="alert alert-error">
+                    <span>⚠</span>
+                    <span><?= htmlspecialchars($error) ?></span>
+                </div>
+            <?php endif; ?>
 
-                <a href="<?= $_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php' ?>" class="btn btn-primary"
-                    style="margin-top: 1.5rem; width: 100%; text-decoration: none; justify-content: center;">
-                    ACCÉDER AU DASHBOARD →
-                </a>
-
-                <a href="?logout=1" class="btn btn-ghost"
-                    style="margin-top: 1rem; width: 100%; opacity: 0.7; text-decoration: none; justify-content: center; font-size: 0.8rem;">
-                    Changer de compte
-                </a>
+            <div class="form-group">
+                <label for="nom" class="label">Identifiant (NOM)</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">👤</span>
+                    <input type="text" name="nom" id="nom" class="input" placeholder="EX: LOTITO" required autocomplete="username">
+                </div>
             </div>
-        <?php else: ?>
-            <!-- Login Form -->
-            <form method="POST" class="login-card glass animate-in">
-                <?php if ($error): ?>
-                    <div class="alert alert-error">
-                        <span>⚠</span>
-                        <span><?= htmlspecialchars($error) ?></span>
-                    </div>
-                <?php endif; ?>
 
-                <div class="form-group">
-                    <label for="nom" class="label">Identifiant (NOM)</label>
-                    <div class="input-wrapper">
-                        <span class="input-icon">👤</span>
-                        <input type="text" name="nom" id="nom" class="input" placeholder="EX: LOTITO" required
-                            autocomplete="username">
-                    </div>
+            <div class="form-group">
+                <label for="password" class="label">Mot de passe</label>
+                <div class="input-wrapper">
+                    <span class="input-icon">🔒</span>
+                    <input type="password" name="password" id="password" class="input" placeholder="••••••••" required autocomplete="current-password">
+                    <button type="button" class="password-toggle" id="togglePassword">👁</button>
                 </div>
+            </div>
 
-                <div class="form-group">
-                    <label for="password" class="label">Mot de passe</label>
-                    <div class="input-wrapper">
-                        <span class="input-icon">🔒</span>
-                        <input type="password" name="password" id="password" class="input" placeholder="••••••••" required
-                            autocomplete="current-password">
-                        <button type="button" class="password-toggle" id="togglePassword">👁</button>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary login-btn">
-                    Connexion Sécurisée →
-                </button>
-
-                <!-- Mode Démo désactivé pour la production -->
-            </form>
-        <?php endif; ?>
+            <button type="submit" class="btn btn-primary login-btn" style="width: 100%;">
+                Connexion Sécurisée →
+            </button>
+        </form>
 
         <div class="login-features animate-in-delay-2">
             <div class="feature-item">
@@ -183,16 +158,14 @@ $isLoggedIn = isset($_SESSION['user_id']);
         // Toggle password visibility
         const togglePassword = document.querySelector('#togglePassword');
         const password = document.querySelector('#password');
-
         if (togglePassword && password) {
-            togglePassword.addEventListener('click', function (e) {
+            togglePassword.addEventListener('click', function () {
                 const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
                 password.setAttribute('type', type);
                 this.textContent = type === 'password' ? '👁' : '🔒';
             });
         }
-
-        // Auto-uppercase username
+        // Auto-uppercase
         const nomInput = document.getElementById('nom');
         if (nomInput) {
             nomInput.addEventListener('input', function () {
@@ -202,5 +175,4 @@ $isLoggedIn = isset($_SESSION['user_id']);
     </script>
     <script src="/assets/notifications.js"></script>
 </body>
-
 </html>
