@@ -127,7 +127,7 @@ try {
 
         // Liste des utilisateurs actifs
         case 'users':
-            $stmt = $db->prepare('SELECT id, nom, prenom, role FROM users WHERE actif = 1 ORDER BY nom');
+            $stmt = $db->prepare('SELECT id, nom, prenom, role FROM users WHERE actif IS TRUE ORDER BY nom');
             $stmt->execute();
 
             echo json_encode([
