@@ -16,7 +16,7 @@ if (isset($_GET['logout'])) {
 
 startSecureSession();
 
-// REDIRECTION AUTOMATIQUE SI DÉJÀ CONNECTÉ (Plus rapide)
+// REDIRECTION AUTOMATIQUE SI DÉJÀ CONNECTÉ
 if (isset($_SESSION['user_id'])) {
     $target = ($_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php');
     header('Location: ' . $target);
@@ -93,6 +93,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body class="bg-main">
+    <!-- Fond animé Premium -->
+    <div class="bg-particles">
+        <div class="particle" style="left: 10%; width: 2px; height: 2px; animation-duration: 15s; animation-delay: 0s;"></div>
+        <div class="particle" style="left: 30%; width: 3px; height: 3px; animation-duration: 20s; animation-delay: 2s;"></div>
+        <div class="particle" style="left: 50%; width: 2px; height: 2px; animation-duration: 18s; animation-delay: 5s;"></div>
+        <div class="particle" style="left: 70%; width: 4px; height: 4px; animation-duration: 25s; animation-delay: 1s;"></div>
+        <div class="particle" style="left: 90%; width: 2px; height: 2px; animation-duration: 22s; animation-delay: 8s;"></div>
+    </div>
+
     <div class="login-page">
         <!-- Logo -->
         <div class="login-header animate-in">
@@ -103,8 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p class="login-subtitle">Système de Pointage Industriel</p>
         </div>
 
-        <!-- Login Form (Toujours affiché si non connecté) -->
-        <form method="POST" class="login-card glass animate-in">
+        <form method="POST" class="login-card glass animate-in" autocomplete="off">
             <?php if ($error): ?>
                 <div class="alert alert-error">
                     <span>⚠</span>
@@ -113,10 +121,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endif; ?>
 
             <div class="form-group">
-                <label for="nom" class="label">Identifiant (NOM)</label>
+                <label for="nom" class="label">Identifiant</label>
                 <div class="input-wrapper">
                     <span class="input-icon">👤</span>
-                    <input type="text" name="nom" id="nom" class="input" placeholder="EX: LOTITO" required autocomplete="username">
+                    <input type="text" name="nom" id="nom" class="input" placeholder="Votre identifiant" required autocomplete="off" spellcheck="false">
+                    <button type="button" class="input-clear" id="resetNom">✕</button>
                 </div>
             </div>
 
@@ -124,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label for="password" class="label">Mot de passe</label>
                 <div class="input-wrapper">
                     <span class="input-icon">🔒</span>
-                    <input type="password" name="password" id="password" class="input" placeholder="••••••••" required autocomplete="current-password">
+                    <input type="password" name="password" id="password" class="input" placeholder="••••••••" required autocomplete="new-password">
                     <button type="button" class="password-toggle" id="togglePassword">👁</button>
                 </div>
             </div>
@@ -134,28 +143,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </button>
         </form>
 
-        <div class="login-features animate-in-delay-2">
-            <div class="feature-item">
-                <span class="feature-icon">🛡️</span>
-                <span>Accès Sécurisé</span>
-            </div>
-            <div class="feature-item">
-                <span class="feature-icon">📱</span>
-                <span>Mobile First</span>
-            </div>
-            <div class="feature-item">
-                <span class="feature-icon">⚡</span>
-                <span>Sync BC</span>
-            </div>
-        </div>
-
-        <div class="login-footer">
+        <div class="login-footer animate-in-delay-2">
             V<?= APP_VERSION ?> · RAOUL LENOIR SAS · <?= date('Y') ?>
         </div>
     </div>
 
     <script>
-        // Toggle password visibility
+        // Toggle password
         const togglePassword = document.querySelector('#togglePassword');
         const password = document.querySelector('#password');
         if (togglePassword && password) {
@@ -165,9 +159,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 this.textContent = type === 'password' ? '👁' : '🔒';
             });
         }
-        // Auto-uppercase
+
+        // Reset username field
+        const resetNom = document.getElementById('resetNom');
         const nomInput = document.getElementById('nom');
-        if (nomInput) {
+        if (resetNom && nomInput) {
+            resetNom.addEventListener('click', () => {
+                nomInput.value = '';
+                nomInput.focus();
+            });
             nomInput.addEventListener('input', function () {
                 this.value = this.value.toUpperCase();
             });
