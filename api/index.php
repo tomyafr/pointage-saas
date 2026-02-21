@@ -93,13 +93,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body class="bg-main">
-    <!-- Fond animé Premium -->
-    <div class="bg-particles">
-        <div class="particle" style="left: 10%; width: 2px; height: 2px; animation-duration: 15s; animation-delay: 0s;"></div>
-        <div class="particle" style="left: 30%; width: 3px; height: 3px; animation-duration: 20s; animation-delay: 2s;"></div>
-        <div class="particle" style="left: 50%; width: 2px; height: 2px; animation-duration: 18s; animation-delay: 5s;"></div>
-        <div class="particle" style="left: 70%; width: 4px; height: 4px; animation-duration: 25s; animation-delay: 1s;"></div>
-        <div class="particle" style="left: 90%; width: 2px; height: 2px; animation-duration: 22s; animation-delay: 8s;"></div>
+    <!-- Vidéo Background Premium -->
+    <div class="video-background">
+        <div class="video-overlay"></div>
+        <video autoplay muted loop playsinline id="bgVideo">
+            <source src="/assets/video-magnet.mp4" type="video/mp4">
+        </video>
     </div>
 
     <div class="login-page">

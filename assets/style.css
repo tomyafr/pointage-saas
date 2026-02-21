@@ -105,13 +105,9 @@ body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background:
-        radial-gradient(circle at 20% 30%, rgba(255, 179, 0, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 80% 70%, rgba(14, 165, 233, 0.08) 0%, transparent 40%),
-        linear-gradient(-45deg, #020617, #0f172a, #020617, #0c1222);
-    background-size: 400% 400%;
-    animation: nebulaFlow 15s ease infinite;
-    z-index: -2;
+    background: #020617;
+    /* Fallback solid color */
+    z-index: -4;
 }
 
 body::after {
@@ -122,16 +118,45 @@ body::after {
     width: 100%;
     height: 100%;
     background-image:
-        radial-gradient(2px 2px at 20px 30px, #fff, rgba(0, 0, 0, 0)),
-        radial-gradient(2px 2px at 40px 70px, #fff, rgba(0, 0, 0, 0)),
-        radial-gradient(2px 2px at 50px 160px, #fff, rgba(0, 0, 0, 0)),
-        radial-gradient(2px 2px at 90px 40px, #fff, rgba(0, 0, 0, 0)),
-        radial-gradient(2px 2px at 130px 80px, #fff, rgba(0, 0, 0, 0));
-    background-repeat: repeat;
-    background-size: 200px 200px;
-    opacity: 0.05;
+        radial-gradient(1px 1px at 20px 30px, #fff, rgba(0, 0, 0, 0)),
+        radial-gradient(1px 1px at 100px 150px, #fff, rgba(0, 0, 0, 0));
+    background-size: 300px 300px;
+    opacity: 0.1;
     z-index: -1;
-    animation: nebulaFlow 60s linear infinite;
+    pointer-events: none;
+}
+
+/* ═══════════ VIDEO BACKGROUND ═══════════ */
+.video-background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -2;
+    overflow: hidden;
+}
+
+#bgVideo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    transform: translate(-50%, -50%);
+    object-fit: cover;
+}
+
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(2, 6, 23, 0.4) 0%, rgba(2, 6, 23, 0.85) 100%);
+    z-index: 1;
 }
 
 /* ═══════════ PARTICLES ═══════════ */
