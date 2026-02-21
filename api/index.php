@@ -6,8 +6,12 @@ $error = '';
 
 // Traitement de la déconnexion
 if (isset($_GET['logout'])) {
+    session_unset();
     session_destroy();
-    setcookie('APP_SESSION_BACKUP', '', time() - 3600, '/');
+    if (isset($_COOKIE[session_name()])) {
+        setcookie(session_name(), '', time() - 42000, '/');
+    }
+    setcookie('APP_SESSION_BACKUP', '', time() - 3600, '/', '', true, true);
     header('Location: index.php');
     exit;
 }
@@ -15,26 +19,7 @@ if (isset($_GET['logout'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $db = getDB();
 
-    // Mode Démo / Accès Rapide
-    if (isset($_POST['demo_user'])) {
-        $nom = strtoupper(trim($_POST['demo_user']));
-        $stmt = $db->prepare('SELECT id, nom, prenom, role FROM users WHERE nom = ? AND actif IS TRUE');
-        $stmt->execute([$nom]);
-        $user = $stmt->fetch();
-
-        if ($user) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_nom'] = $user['nom'];
-            $_SESSION['user_prenom'] = $user['prenom'];
-            $_SESSION['role'] = $user['role'];
-            $_SESSION['login_time'] = time();
-            setSessionBackup();
-            session_write_close();
-
-            header('Location: ' . ($user['role'] === 'chef' ? 'chef.php' : 'operator.php'));
-            exit;
-        }
-    }
+    // Suppression du mode démo pour la production
 
     $nom = strtoupper(trim($_POST['nom'] ?? ''));
     $password = $_POST['password'] ?? '';
@@ -217,23 +202,7 @@ $isLoggedIn = isset($_SESSION['user_id']);
                     Connexion Sécurisée →
                 </button>
 
-                <div class="demo-access">
-                    <p class="demo-label">Accès Rapide · Mode Démonstration</p>
-                    <div class="demo-chips">
-                        <button type="submit" name="demo_user" value="DUPONT" class="btn btn-ghost"
-                            style="padding: 0.75rem; font-size: 0.7rem;" formnovalidate>
-                            <span>👷</span> Opérateur
-                        </button>
-                        <button type="submit" name="demo_user" value="MARTIN" class="btn btn-ghost"
-                            style="padding: 0.75rem; font-size: 0.7rem;" formnovalidate>
-                            <span>🔧</span> Testeur
-                        </button>
-                        <button type="submit" name="demo_user" value="ADMIN" class="btn btn-ghost"
-                            style="padding: 0.75rem; font-size: 0.7rem;" formnovalidate>
-                            <span>📊</span> Admin
-                        </button>
-                    </div>
-                </div>
+                <!-- Mode Démo désactivé pour la production -->
             </form>
 
             <div class="login-features animate-in-delay-2">
