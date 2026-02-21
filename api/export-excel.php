@@ -106,34 +106,37 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
 
     <Styles>
         <Style ss:ID="header">
-            <Font ss:Bold="1" ss:Size="11" ss:Color="#FFFFFF" /><Interior ss:Color="#F59E0B" ss:Pattern="Solid" /><Alignment ss:Horizontal="Center" ss:Vertical="Center" /><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#D97706" /></Borders>
+            <Font ss:Bold="1" ss:Size="11" ss:Color="#FFFFFF" /><Interior ss:Color="#D97706" ss:Pattern="Solid" /><Alignment ss:Horizontal="Center" ss:Vertical="Center" /><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#B45309" /></Borders>
         </Style>
         <Style ss:ID="title">
-            <Font ss:Bold="1" ss:Size="14" ss:Color="#0A0F1A" /><Alignment ss:Horizontal="Left" />
+            <Font ss:Bold="1" ss:Size="16" ss:Color="#B45309" /><Alignment ss:Horizontal="Left" />
         </Style>
         <Style ss:ID="subtitle">
-            <Font ss:Size="10" ss:Color="#64748B" />
+            <Font ss:Size="10" ss:Color="#475569" />
         </Style>
         <Style ss:ID="number">
-            <NumberFormat ss:Format="0.00" /><Alignment ss:Horizontal="Center" />
+            <NumberFormat ss:Format="0.00" /><Alignment ss:Horizontal="Center" /><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0" /></Borders>
         </Style>
         <Style ss:ID="total">
-            <Font ss:Bold="1" ss:Size="11" ss:Color="#F59E0B" /><Interior ss:Color="#FEF3C7" ss:Pattern="Solid" /><NumberFormat ss:Format="0.00" /><Alignment ss:Horizontal="Center" /><Borders><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#F59E0B" /></Borders>
+            <Font ss:Bold="1" ss:Size="11" ss:Color="#B45309" /><Interior ss:Color="#FEF3C7" ss:Pattern="Solid" /><NumberFormat ss:Format="0.00" /><Alignment ss:Horizontal="Center" /><Borders><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#D97706" /></Borders>
         </Style>
         <Style ss:ID="total_label">
-            <Font ss:Bold="1" ss:Size="11" ss:Color="#F59E0B" /><Interior ss:Color="#FEF3C7" ss:Pattern="Solid" /><Borders><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#F59E0B" /></Borders>
+            <Font ss:Bold="1" ss:Size="11" ss:Color="#B45309" /><Interior ss:Color="#FEF3C7" ss:Pattern="Solid" /><Borders><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="2" ss:Color="#D97706" /></Borders>
         </Style>
         <Style ss:ID="synced">
-            <Font ss:Color="#10B981" /><Alignment ss:Horizontal="Center" />
+            <Font ss:Color="#059669" /><Alignment ss:Horizontal="Center" /><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0" /></Borders>
         </Style>
         <Style ss:ID="pending">
-            <Font ss:Color="#3B82F6" /><Alignment ss:Horizontal="Center" />
+            <Font ss:Color="#2563EB" /><Alignment ss:Horizontal="Center" /><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0" /></Borders>
         </Style>
         <Style ss:ID="center">
-            <Alignment ss:Horizontal="Center" />
+            <Alignment ss:Horizontal="Center" /><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0" /></Borders>
         </Style>
         <Style ss:ID="of_bold">
-            <Font ss:Bold="1" ss:Color="#D97706" />
+            <Font ss:Bold="1" ss:Color="#B45309" /><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0" /></Borders>
+        </Style>
+        <Style ss:ID="cell_text">
+            <Alignment ss:Horizontal="Left" /><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0" /></Borders>
         </Style>
     </Styles>
 
@@ -233,7 +236,7 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
             <?php foreach ($pointages as $p): ?>
                 <Row>
                     <Cell ss:StyleID="of_bold"><Data ss:Type="String"><?= htmlspecialchars($p['numero_of']) ?></Data></Cell>
-                    <Cell><Data
+                    <Cell ss:StyleID="cell_text"><Data
                             ss:Type="String"><?= htmlspecialchars($p['operateur_prenom'] . ' ' . $p['operateur_nom']) ?></Data>
                     </Cell>
                     <Cell ss:StyleID="center"><Data
@@ -292,12 +295,13 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
             foreach ($pointages as $p):
                 ?>
                 <Row>
-                    <Cell><Data ss:Type="String">PTG-<?= str_pad($docNum++, 5, '0', STR_PAD_LEFT) ?></Data></Cell>
+                    <Cell ss:StyleID="cell_text"><Data
+                            ss:Type="String">PTG-<?= str_pad($docNum++, 5, '0', STR_PAD_LEFT) ?></Data></Cell>
                     <Cell ss:StyleID="center"><Data
                             ss:Type="String"><?= date('Y-m-d', strtotime($p['date_pointage'])) ?></Data></Cell>
                     <Cell ss:StyleID="of_bold"><Data ss:Type="String"><?= htmlspecialchars($p['numero_of']) ?></Data></Cell>
                     <Cell ss:StyleID="number"><Data ss:Type="Number"><?= $p['heures'] ?></Data></Cell>
-                    <Cell><Data ss:Type="String">Pointage
+                    <Cell ss:StyleID="cell_text"><Data ss:Type="String">Pointage
                             <?= htmlspecialchars($p['operateur_prenom'] . ' ' . $p['operateur_nom']) ?></Data></Cell>
                     <Cell ss:StyleID="center"><Data ss:Type="String">PROD</Data></Cell>
                 </Row>

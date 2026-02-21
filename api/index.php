@@ -96,10 +96,12 @@ $isLoggedIn = isset($_SESSION['user_id']);
     <div class="login-page">
         <!-- Logo -->
         <div class="login-header animate-in">
-            <div class="brand-icon" style="width: 220px; height: auto; margin: 0 auto 2rem auto;">
-                <img src="https://www.lenoir-mec.com/wp-content/uploads/2023/12/logo-lenoir-mec.svg" alt="Raoul Lenoir">
+            <div class="brand-icon" style="width: 280px; height: auto; margin: 0 auto 1.5rem auto;">
+                <img src="https://www.lenoir-mec.com/wp-content/uploads/2023/12/logo-lenoir-mec-blanc.svg"
+                    alt="Raoul Lenoir"
+                    style="filter: brightness(0) saturate(100%) invert(73%) sepia(86%) saturate(1063%) hue-rotate(358deg) brightness(101%) contrast(106%);">
             </div>
-            <h1 class="login-title">Raoul Lenoir</h1>
+            <h1 class="login-title" style="color: #ffb300;">Raoul Lenoir</h1>
             <p class="login-subtitle">Système de Pointage Industriel</p>
         </div>
 
