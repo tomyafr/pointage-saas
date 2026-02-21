@@ -48,6 +48,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mon Profil | Raoul Lenoir</title>
     <link rel="stylesheet" href="/assets/style.css">
+    <style>
+        .password-toggle {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            padding: 0.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: color 0.2s;
+        }
+
+        .password-toggle:hover {
+            color: var(--primary);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+    </style>
 </head>
 
 <body>
@@ -55,12 +76,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <div class="dashboard-layout">
-        <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div style="margin-bottom: 2.5rem;">
-                <div class="brand-icon" style="width: 180px; height: auto; margin: 0 0 1rem 0;">
+                <!-- Logo cliquable vers le dashboard -->
+                <a href="<?= $_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php' ?>" class="brand-icon"
+                    style="display: block; width: 180px; height: auto; margin: 0 0 1rem 0;">
                     <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir">
-                </div>
+                </a>
                 <h2 style="font-size: 1.15rem;"><span class="text-gradient">Raoul Lenoir</span></h2>
                 <p style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Mon Profil</p>
             </div>
@@ -89,7 +111,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             </div>
         </aside>
 
-        <!-- Main Content -->
         <main class="main-content">
             <?php if ($message): ?>
                 <div class="alert alert-<?= $messageType ?> animate-in">
@@ -108,16 +129,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 <div
                     style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
                     <div>
-                        <p
-                            style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">
-                            Nom Complet</p>
+                        <p style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Nom Complet</p>
                         <p style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">
                             <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?></p>
                     </div>
                     <div>
-                        <p
-                            style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">
-                            Rôle</p>
+                        <p style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Rôle</p>
                         <p style="font-size: 1.1rem; font-weight: 700; color: var(--primary);">
                             <?= $_SESSION['role'] === 'chef' ? 'Administrateur' : 'Opérateur' ?>
                         </p>
@@ -132,18 +149,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
                     <div class="form-group" style="margin-bottom: 1.25rem;">
                         <label class="label">Ancien mot de passe</label>
-                        <input type="password" name="old_password" class="input" required
-                            placeholder="Votre mot de passe actuel">
+                        <div class="input-wrapper">
+                            <input type="password" name="old_password" class="input p-password" required
+                                placeholder="Votre mot de passe actuel" style="flex: 1;">
+                            <button type="button" class="password-toggle" onclick="togglePass(this)">👁</button>
+                        </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                         <div class="form-group">
                             <label class="label">Nouveau mot de passe</label>
-                            <input type="password" name="new_password" class="input" required placeholder="Min. 6 car.">
+                            <div class="input-wrapper">
+                                <input type="password" name="new_password" class="input p-password" required
+                                    placeholder="Min. 6 car." style="flex: 1;">
+                                <button type="button" class="password-toggle" onclick="togglePass(this)">👁</button>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label class="label">Confirmation</label>
-                            <input type="password" name="confirm_password" class="input" required placeholder="Répéter">
+                            <div class="input-wrapper">
+                                <input type="password" name="confirm_password" class="input p-password" required
+                                    placeholder="Répéter" style="flex: 1;">
+                                <button type="button" class="password-toggle" onclick="togglePass(this)">👁</button>
+                            </div>
                         </div>
                     </div>
 
@@ -164,6 +192,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('sidebarOverlay').classList.toggle('open');
+        }
+        function togglePass(btn) {
+            const input = btn.parentElement.querySelector('input');
+            const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+            input.setAttribute('type', type);
+            btn.textContent = type === 'password' ? '👁' : '🔒';
         }
     </script>
 </body>

@@ -97,7 +97,7 @@ $isLoggedIn = isset($_SESSION['user_id']);
         <!-- Logo -->
         <div class="login-header animate-in">
             <div class="brand-icon" style="width: 220px; height: auto; margin: 0 auto 2rem auto;">
-                <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir">
+                <img src="https://www.lenoir-mec.com/wp-content/uploads/2023/12/logo-lenoir-mec.svg" alt="Raoul Lenoir">
             </div>
             <h1 class="login-title">Raoul Lenoir</h1>
             <p class="login-subtitle">Système de Pointage Industriel</p>
@@ -108,7 +108,8 @@ $isLoggedIn = isset($_SESSION['user_id']);
             <div class="welcome-screen animate-in">
                 <h2 class="welcome-title">Bienvenue, <?= htmlspecialchars($_SESSION['user_prenom']) ?></h2>
                 <p class="welcome-text">Session active ·
-                    <?= $_SESSION['role'] === 'chef' ? 'Administrateur' : 'Opérateur' ?></p>
+                    <?= $_SESSION['role'] === 'chef' ? 'Administrateur' : 'Opérateur' ?>
+                </p>
 
                 <a href="<?= $_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php' ?>" class="btn btn-primary"
                     style="margin-top: 1.5rem; width: 100%; text-decoration: none; justify-content: center;">

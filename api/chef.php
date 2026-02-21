@@ -304,8 +304,9 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div style="margin-bottom: 2.5rem;">
-                <div class="brand-icon" style="width: 180px; height: auto; margin: 0 0 1rem 0;"><img
-                        src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir"></div>
+                <a href="chef.php" class="brand-icon"
+                    style="display: block; width: 180px; height: auto; margin: 0 0 1rem 0;"><img
+                        src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir"></a>
                 <h2 style="font-size: 1.15rem;"><span class="text-gradient">Raoul Lenoir</span></h2>
                 <p
                     style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 0.25rem;">
