@@ -299,7 +299,7 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
     <!-- Vidéo Background Ambiance (Fumée) -->
     <div class="video-smoke-background">
         <video autoplay muted loop playsinline id="bgVideoSmoke">
-            <source src="/assets/video-fumee-blanche.mp4" type="video/mp4">
+            <source src="/assets/video-fumee-blanche-faible.mp4" type="video/mp4">
         </video>
     </div>
 
