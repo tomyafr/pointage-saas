@@ -72,6 +72,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 </head>
 
 <body>
+    <!-- Vidéo Background Ambiance (Fumée) -->
+    <div class="video-smoke-background">
+        <video autoplay muted loop playsinline id="bgVideoSmoke">
+            <source src="/assets/video-fumee-blanche.mp4" type="video/mp4">
+        </video>
+    </div>
+
     <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
@@ -103,7 +110,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.4rem;">
                     Connecté</p>
                 <p style="font-weight: 600; font-size: 0.85rem;">
-                    <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?></p>
+                    <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?>
+                </p>
                 <a href="logout.php" class="btn btn-ghost"
                     style="width: 100%; margin-top: 1rem; color: var(--error); border-color: rgba(244, 63, 94, 0.15); font-size: 0.75rem; padding: 0.6rem;">
                     Se déconnecter
@@ -131,7 +139,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     <div>
                         <p style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Nom Complet</p>
                         <p style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">
-                            <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?></p>
+                            <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?>
+                        </p>
                     </div>
                     <div>
                         <p style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Rôle</p>
