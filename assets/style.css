@@ -273,71 +273,132 @@ h4 {
 /* ═══════════ LOGIN PAGE ═══════════ */
 .login-page {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    padding: 1.5rem;
+    padding: 2rem;
+    gap: 2rem;
 }
 
-.login-card {
+.login-card,
+.welcome-screen {
     width: 100%;
     max-width: 440px;
+    padding: 2.5rem;
+    border-radius: var(--radius-xl);
+    text-align: center;
 }
 
 .login-header {
     text-align: center;
-    margin-bottom: 2.5rem;
 }
 
 .brand-icon {
-    width: 120px;
-    height: auto;
-    background: transparent;
-    border-radius: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 180px;
     margin: 0 auto 1.5rem;
-    overflow: visible;
-    box-shadow: none;
     transition: var(--transition-smooth);
-    animation: none;
 }
 
 .brand-icon img {
     width: 100%;
     height: auto;
-    object-fit: contain;
     filter: drop-shadow(0 0 20px var(--primary-glow));
 }
 
-.brand-icon:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 60px var(--primary-glow);
-}
-
-@keyframes iconPulse {
-
-    0%,
-    100% {
-        box-shadow: 0 0 30px var(--primary-glow), 0 10px 30px rgba(0, 0, 0, 0.3);
-    }
-
-    50% {
-        box-shadow: 0 0 50px var(--primary-glow), 0 10px 30px rgba(0, 0, 0, 0.3);
-    }
-}
-
 .login-title {
-    font-size: 2.2rem;
-    margin-bottom: 0.5rem;
+    font-size: 2.5rem;
     font-weight: 800;
+    margin-bottom: 0.25rem;
 }
 
 .login-subtitle {
     color: var(--text-muted);
-    font-size: 0.95rem;
-    font-weight: 400;
+    font-size: 1rem;
+    opacity: 0.8;
+}
+
+.welcome-screen {
+    background: var(--bg-glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px);
+}
+
+.welcome-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary);
+}
+
+.welcome-text {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+}
+
+.login-features {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
+}
+
+.feature-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    font-weight: 600;
+}
+
+.feature-icon {
+    font-size: 1rem;
+}
+
+.login-footer {
+    margin-top: 2rem;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    font-family: var(--font-mono);
+}
+
+.password-toggle {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    padding: 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: color 0.2s;
+}
+
+.password-toggle:hover {
+    color: var(--primary);
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 1.25rem;
+    color: var(--text-dim);
+    pointer-events: none;
+    font-size: 1rem;
+}
+
+.input-wrapper .input {
+    padding-left: 3rem;
+    padding-right: 3rem;
+}
+
+.input-wrapper .password-toggle {
+    position: absolute;
+    right: 0.75rem;
 }
 
 /* ═══════════ DASHBOARD LAYOUT ═══════════ */

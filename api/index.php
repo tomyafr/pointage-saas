@@ -3,10 +3,11 @@ require_once __DIR__ . '/../includes/config.php';
 
 // Traitement de la déconnexion (avant tout démarrage de session)
 if (isset($_GET['logout'])) {
-    if (session_status() === PHP_SESSION_NONE) session_start();
+    if (session_status() === PHP_SESSION_NONE)
+        session_start();
     $_SESSION = array();
     session_destroy();
-    
+
     if (isset($_COOKIE[session_name()])) {
         setcookie(session_name(), '', time() - 42000, '/');
     }
@@ -58,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['login_time'] = time();
                 setSessionBackup();
-                
+
                 logAudit('LOGIN_SUCCESS', "User: $nom");
                 session_write_close();
 
@@ -70,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 } else {
                     $db->prepare('INSERT INTO login_attempts (ip_address) VALUES (?)')->execute([$ip]);
                 }
-                
+
                 logAudit('LOGIN_FAILED', "IP: $ip, Identifiant: $nom");
                 $error = "Accès refusé. Vérifiez vos identifiants.";
             }
@@ -83,14 +84,16 @@ $isLoggedIn = isset($_SESSION['user_id']);
 ?>
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Connexion | Raoul Lenoir — Pointage Industriel</title>
     <link rel="stylesheet" href="/assets/style.css">
 </head>
+
 <body class="bg-main">
-    <div class="login-container">
+    <div class="login-page">
         <!-- Logo -->
         <div class="login-header animate-in">
             <div class="brand-icon" style="width: 220px; height: auto; margin: 0 auto 2rem auto;">
@@ -104,13 +107,16 @@ $isLoggedIn = isset($_SESSION['user_id']);
             <!-- Welcome Screen -->
             <div class="welcome-screen animate-in">
                 <h2 class="welcome-title">Bienvenue, <?= htmlspecialchars($_SESSION['user_prenom']) ?></h2>
-                <p class="welcome-text">Session active · <?= $_SESSION['role'] === 'chef' ? 'Administrateur' : 'Opérateur' ?></p>
-                
-                <a href="<?= $_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php' ?>" class="btn btn-primary" style="margin-top: 1.5rem; width: 100%; text-decoration: none; justify-content: center;">
+                <p class="welcome-text">Session active ·
+                    <?= $_SESSION['role'] === 'chef' ? 'Administrateur' : 'Opérateur' ?></p>
+
+                <a href="<?= $_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php' ?>" class="btn btn-primary"
+                    style="margin-top: 1.5rem; width: 100%; text-decoration: none; justify-content: center;">
                     ACCÉDER AU DASHBOARD →
                 </a>
-                
-                <a href="?logout=1" class="btn btn-ghost" style="margin-top: 1rem; width: 100%; opacity: 0.7; text-decoration: none; justify-content: center; font-size: 0.8rem;">
+
+                <a href="?logout=1" class="btn btn-ghost"
+                    style="margin-top: 1rem; width: 100%; opacity: 0.7; text-decoration: none; justify-content: center; font-size: 0.8rem;">
                     Changer de compte
                 </a>
             </div>
@@ -128,7 +134,8 @@ $isLoggedIn = isset($_SESSION['user_id']);
                     <label for="nom" class="label">Identifiant (NOM)</label>
                     <div class="input-wrapper">
                         <span class="input-icon">👤</span>
-                        <input type="text" name="nom" id="nom" class="input" placeholder="EX: LOTITO" required autocomplete="username">
+                        <input type="text" name="nom" id="nom" class="input" placeholder="EX: LOTITO" required
+                            autocomplete="username">
                     </div>
                 </div>
 
@@ -136,7 +143,8 @@ $isLoggedIn = isset($_SESSION['user_id']);
                     <label for="password" class="label">Mot de passe</label>
                     <div class="input-wrapper">
                         <span class="input-icon">🔒</span>
-                        <input type="password" name="password" id="password" class="input" placeholder="••••••••" required autocomplete="current-password">
+                        <input type="password" name="password" id="password" class="input" placeholder="••••••••" required
+                            autocomplete="current-password">
                         <button type="button" class="password-toggle" id="togglePassword">👁</button>
                     </div>
                 </div>
@@ -192,4 +200,5 @@ $isLoggedIn = isset($_SESSION['user_id']);
     </script>
     <script src="/assets/notifications.js"></script>
 </body>
+
 </html>
