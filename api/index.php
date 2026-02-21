@@ -18,36 +18,62 @@ if (isset($_GET['logout'])) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $db = getDB();
+    $ip = $_SERVER['REMOTE_ADDR'];
 
-    // Suppression du mode démo pour la production
+    // 1. Protection Brute Force : Vérifier les tentatives
+    $stmt = $db->prepare('SELECT attempts, last_attempt FROM login_attempts WHERE ip_address = ?');
+    $stmt->execute([$ip]);
+    $throttle = $stmt->fetch();
 
-    $nom = strtoupper(trim($_POST['nom'] ?? ''));
-    $password = $_POST['password'] ?? '';
+    if ($throttle && $throttle['attempts'] >= 5) {
+        $last = strtotime($throttle['last_attempt']);
+        if (time() - $last < 900) { // Bloqué pendant 15 minutes
+            $error = "Trop de tentatives. Réessayez dans 15 minutes.";
+        } else {
+            // Réinitialiser après 15 min
+            $db->prepare('DELETE FROM login_attempts WHERE ip_address = ?')->execute([$ip]);
+            $throttle = null;
+        }
+    }
 
-    if (empty($nom) || empty($password)) {
-        $error = 'Veuillez remplir tous les champs.';
-    } else {
-        $stmt = $db->prepare('SELECT id, nom, prenom, password_hash, role FROM users WHERE nom = ? AND actif IS TRUE');
-        $stmt->execute([$nom]);
-        $user = $stmt->fetch();
+    if (!$error) {
+        $nom = strtoupper(trim($_POST['nom'] ?? ''));
+        $password = $_POST['password'] ?? '';
 
-        if ($user) {
-            if (password_verify($password, $user['password_hash'])) {
+        if (empty($nom) || empty($password)) {
+            $error = 'Veuillez remplir tous les champs.';
+        } else {
+            $stmt = $db->prepare('SELECT id, nom, prenom, password_hash, role FROM users WHERE nom = ? AND actif IS TRUE');
+            $stmt->execute([$nom]);
+            $user = $stmt->fetch();
+
+            if ($user && password_verify($password, $user['password_hash'])) {
+                // Succès : Supprimer les tentatives échouées
+                $db->prepare('DELETE FROM login_attempts WHERE ip_address = ?')->execute([$ip]);
+
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_nom'] = $user['nom'];
                 $_SESSION['user_prenom'] = $user['prenom'];
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['login_time'] = time();
                 setSessionBackup();
+
+                logAudit('LOGIN_SUCCESS', "User: $nom");
                 session_write_close();
 
                 header('Location: ' . ($user['role'] === 'chef' ? 'chef.php' : 'operator.php'));
                 exit;
             } else {
+                // Échec : Incrémenter les tentatives
+                if ($throttle) {
+                    $db->prepare('UPDATE login_attempts SET attempts = attempts + 1, last_attempt = NOW() WHERE ip_address = ?')->execute([$ip]);
+                } else {
+                    $db->prepare('INSERT INTO login_attempts (ip_address) VALUES (?)')->execute([$ip]);
+                }
+
+                logAudit('LOGIN_FAILED', "IP: $ip, Identifiant: $nom");
                 $error = "Accès refusé. Vérifiez vos identifiants.";
             }
-        } else {
-            $error = "Utilisateur inconnu.";
         }
     }
 }

@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     DO UPDATE SET heures = EXCLUDED.heures, updated_at = NOW()
                 ');
                 $stmt->execute([$userId, $numeroOf, $heures, $datePointage]);
+                logAudit('ENTRY_CREATED', "OF: $numeroOf, H: $heures, Date: $datePointage");
                 $message = "✓ {$heures}h enregistrées sur OF {$numeroOf}";
                 $messageType = 'success';
             } catch (PDOException $e) {
@@ -133,6 +134,9 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                 <button class="btn btn-ghost" onclick="switchTab('semaine')" id="nav-semaine" style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;">
                     <span>📅</span> Ma Semaine
                 </button>
+                <a href="profile.php" class="btn btn-ghost" style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem; text-decoration: none; color: inherit;">
+                    <span>👤</span> Mon Profil
+                </a>
             </nav>
 
             <!-- Weekly Progress -->
@@ -331,7 +335,7 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
             </div>
 
             <div class="app-footer">
-                Raoul Lenoir SAS · V<?= APP_VERSION ?> · <?= date('Y') ?>
+                Raoul Lenoir SAS · <a href="privacy.php" style="color: inherit; text-decoration: underline;">RGPD & Confidentialité</a> · V<?= APP_VERSION ?>
             </div>
         </main>
     </div>

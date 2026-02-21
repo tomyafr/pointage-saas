@@ -147,3 +147,22 @@ function getCurrentWeekDates()
         'labels' => ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
     ];
 }
+
+/**
+ * Enregistrer une action dans le log d'audit
+ */
+function logAudit($action, $details = '')
+{
+    try {
+        $db = getDB();
+        $stmt = $db->prepare('INSERT INTO audit_logs (user_id, action, details, ip_address) VALUES (?, ?, ?, ?)');
+        $stmt->execute([
+            $_SESSION['user_id'] ?? null,
+            $action,
+            $details,
+            $_SERVER['REMOTE_ADDR']
+        ]);
+    } catch (Exception $e) {
+        // On ne bloque pas l'app si le log échoue
+    }
+}

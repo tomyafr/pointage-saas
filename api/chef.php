@@ -57,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     $stmt = $db->prepare('INSERT INTO sync_log (chef_id, nb_pointages, status, response_data) VALUES (?, ?, ?, ?)');
                     $stmt->execute([$_SESSION['user_id'], count($syncIds), 'success', json_encode($result)]);
 
+                    logAudit('SYNC_SUCCESS', "Count: " . count($syncIds));
                     $message = "✓ " . count($syncIds) . " pointage(s) synchronisé(s) avec Business Central.";
                     $messageType = 'success';
                 } else {
@@ -354,6 +355,9 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
                     style="width: 100%; margin-top: 1rem; color: var(--error); border-color: rgba(244, 63, 94, 0.15); font-size: 0.75rem; padding: 0.6rem;">
                     Se déconnecter
                 </a>
+                <a href="profile.php" class="btn btn-ghost" style="width: 100%; margin-top: 0.5rem; font-size: 0.75rem; padding: 0.6rem; text-decoration: none; color: inherit; border: 1px solid var(--glass-border);">
+                    👤 Mon Profil
+                </a>
                 <button onclick="if(window.notificationManager) window.notificationManager.requestPermission()"
                     class="btn btn-ghost"
                     style="width: 100%; margin-top: 0.5rem; font-size: 0.65rem; border: none; opacity: 0.5;">
@@ -577,7 +581,8 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
             </div>
 
             <div class="app-footer">
-                Raoul Lenoir SAS · V<?= APP_VERSION ?> · <?= date('Y') ?>
+                Raoul Lenoir SAS · <a href="privacy.php" style="color: inherit; text-decoration: underline;">RGPD &
+                    Confidentialité</a> · V<?= APP_VERSION ?>
             </div>
         </main>
     </div>
