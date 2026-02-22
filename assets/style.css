@@ -1082,7 +1082,11 @@ input[type="checkbox"] {
         /* Touch target iOS/Material */
     }
 
-    /* ── Formulaire de saisie : 1 colonne ── */
+    /* ── Graphiques : 1 colonne sur mobile ── */
+    .charts-grid {
+        grid-template-columns: 1fr !important;
+    }
+
     .saisie-grid {
         grid-template-columns: 1fr !important;
         gap: 1.25rem !important;

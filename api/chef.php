@@ -137,6 +137,34 @@ $stmt = $db->prepare('SELECT * FROM sync_log ORDER BY created_at DESC LIMIT 5');
 $stmt->execute();
 $syncLogs = $stmt->fetchAll();
 
+// ── Données graphiques ────────────────────────────────────────────────────
+// Heures par opérateur (semaine courante)
+$stmtChart = $db->prepare('
+    SELECT u.prenom, u.nom, SUM(p.heures) as total
+    FROM pointages p
+    JOIN users u ON p.user_id = u.id
+    WHERE p.date_pointage BETWEEN ? AND ?
+    GROUP BY u.id, u.nom, u.prenom
+    ORDER BY total DESC
+    LIMIT 10
+');
+$stmtChart->execute([$dateDebut, $dateFin]);
+$chartOperateurs = $stmtChart->fetchAll();
+
+// Heures par jour de la semaine (courante)
+$stmtJours = $db->prepare('
+    SELECT date_pointage, SUM(heures) as total
+    FROM pointages
+    WHERE date_pointage BETWEEN ? AND ?
+    GROUP BY date_pointage
+    ORDER BY date_pointage
+');
+$stmtJours->execute([$dateDebut, $dateFin]);
+$chartJours = $stmtJours->fetchAll();
+
+// Top OFs par heures
+$chartOfsTop = array_slice($ofsData, 0, 6);
+
 // ----- Fonctions Business Central -----
 function prepareBCPayload($pointages)
 {
@@ -317,7 +345,7 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
     <!-- ═══ HEADER MOBILE (visible uniquement sur smartphone) ═══ -->
     <header class="mobile-header">
         <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir" class="mobile-header-logo"
-             style="filter: brightness(0) saturate(100%) invert(73%) sepia(86%) saturate(1063%) hue-rotate(358deg) brightness(101%) contrast(106%);">
+            style="filter: brightness(0) saturate(100%) invert(73%) sepia(86%) saturate(1063%) hue-rotate(358deg) brightness(101%) contrast(106%);">
         <span class="mobile-header-title">Chef d'Atelier</span>
         <span class="mobile-header-user"><?= htmlspecialchars($_SESSION['user_prenom']) ?></span>
     </header>
@@ -340,17 +368,18 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
             </div>
 
             <nav style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 2rem;">
-                <a href="chef.php" class="btn btn-primary"
+                <a href="chef.php" class="btn btn-primary sidebar-link"
                     style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;">
-                    <span>📊</span> Tableau de bord
+                    <span>&#128202;</span> Tableau de bord
                 </a>
-                <a href="operator.php" class="btn btn-ghost"
+                <a href="historique.php" class="btn btn-ghost sidebar-link"
                     style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;">
-                    <span>📝</span> Mode Saisie
+                    <span>&#128337;</span> Historique G&eacute;n&eacute;ral
                 </a>
-                <a href="export-excel.php?week=<?= $filterWeek ?>&of=<?= urlencode($filterOf) ?>" class="btn btn-ghost"
+                <a href="export-excel.php?week=<?= $filterWeek ?>&amp;of=<?= urlencode($filterOf) ?>"
+                    class="btn btn-ghost sidebar-link"
                     style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;" target="_blank">
-                    <span>📥</span> Export Excel
+                    <span>&#128229;</span> Export Excel
                 </a>
             </nav>
 
@@ -422,6 +451,34 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
                     <span class="stat-value" style="color: var(--success);"><?= $totalSynced ?></span>
                 </div>
             </div>
+
+            <!-- Graphiques -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;" class="charts-grid animate-in-delay-1">
+                <!-- Heures par opérateur -->
+                <div class="card glass" style="padding: 1.5rem;">
+                    <h4 style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem;">&#128101; Heures / Opérateur</h4>
+                    <?php if (!empty($chartOperateurs)): ?>
+                    <canvas id="chartOperateurs" height="220"></canvas>
+                    <?php else: ?>
+                    <p style="text-align:center;color:var(--text-dim);font-size:0.8rem;padding:2rem 0;">Aucun pointage cette semaine</p>
+                    <?php endif; ?>
+                </div>
+                <!-- Heures par jour -->
+                <div class="card glass" style="padding: 1.5rem;">
+                    <h4 style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem;">&#128197; Heures / Jour</h4>
+                    <?php if (!empty($chartJours)): ?>
+                    <canvas id="chartJours" height="220"></canvas>
+                    <?php else: ?>
+                    <p style="text-align:center;color:var(--text-dim);font-size:0.8rem;padding:2rem 0;">Aucun pointage cette semaine</p>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <?php if (!empty($chartOfsTop)): ?>
+            <div class="card glass animate-in-delay-1" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                <h4 style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem;">&#127942; Top OFs par Heures</h4>
+                <canvas id="chartOfs" height="90"></canvas>
+            </div>
+            <?php endif; ?>
 
             <div class="card glass animate-in">
                 <div
@@ -658,7 +715,129 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
             document.getElementById('sidebarOverlay').classList.toggle('open');
         }
     </script>
-    <script src="/assets/notifications.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // Palette couleurs
+        const goldColor = '#ffb300';
+        const cyanColor = '#0ea5e9';
+        const purpleColor = '#a78bfa';
+        const greenColor = '#10b981';
+        const palette = ['#ffb300', '#0ea5e9', '#a78bfa', '#10b981', '#f43f5e', '#f97316', '#06b6d4', '#8b5cf6', '#84cc16', '#ec4899'];
+        const gridColor = 'rgba(255,255,255,0.06)';
+        const textColor = '#94a3b8';
+
+        Chart.defaults.color = textColor;
+        Chart.defaults.font.family = 'Outfit, sans-serif';
+        Chart.defaults.plugins.legend.display = false;
+
+        // ── Graphique 1: heures par opérateur ────────────────────────────
+        <?php if (!empty($chartOperateurs)): ?>
+            const opLabels = <?= json_encode(array_map(fn($r) => $r['prenom'] . ' ' . mb_substr($r['nom'], 0, 1) . '.', $chartOperateurs)) ?>;
+            const opData = <?= json_encode(array_map(fn($r) => round((float) $r['total'], 2), $chartOperateurs)) ?>;
+            new Chart(document.getElementById('chartOperateurs'), {
+                type: 'bar',
+                data: {
+                    labels: opLabels,
+                    datasets: [{
+                        data: opData,
+                        backgroundColor: opLabels.map((_, i) => palette[i % palette.length] + 'CC'),
+                        borderColor: opLabels.map((_, i) => palette[i % palette.length]),
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { tooltip: { callbacks: { label: ctx => ctx.parsed.y + 'h' } } },
+                    scales: {
+                        x: { grid: { color: gridColor }, ticks: { font: { size: 11 } } },
+                        y: {
+                            grid: { color: gridColor }, beginAtZero: true,
+                            ticks: { callback: v => v + 'h' }
+                        }
+                    }
+                }
+            });
+        <?php endif; ?>
+
+        // ── Graphique 2: heures par jour ─────────────────────────────────
+        <?php if (!empty($chartJours)): ?>
+            const joursMap = { 'Monday': 'Lun', 'Tuesday': 'Mar', 'Wednesday': 'Mer', 'Thursday': 'Jeu', 'Friday': 'Ven', 'Saturday': 'Sam', 'Sunday': 'Dim' };
+            const joursLabels = <?= json_encode(array_map(fn($r) => date('D d/m', strtotime($r['date_pointage'])), $chartJours)) ?>;
+            const joursData = <?= json_encode(array_map(fn($r) => round((float) $r['total'], 2), $chartJours)) ?>;
+            new Chart(document.getElementById('chartJours'), {
+                type: 'line',
+                data: {
+                    labels: joursLabels,
+                    datasets: [{
+                        data: joursData,
+                        borderColor: cyanColor,
+                        backgroundColor: 'rgba(14,165,233,0.12)',
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: cyanColor,
+                        pointBorderColor: '#020617',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { tooltip: { callbacks: { label: ctx => ctx.parsed.y + 'h' } } },
+                    scales: {
+                        x: { grid: { color: gridColor } },
+                        y: {
+                            grid: { color: gridColor }, beginAtZero: true,
+                            ticks: { callback: v => v + 'h' }
+                        }
+                    }
+                }
+            });
+        <?php endif; ?>
+
+        // ── Graphique 3: top OFs ─────────────────────────────────────────
+        <?php if (!empty($chartOfsTop)): ?>
+            const ofsLabels = <?= json_encode(array_column($chartOfsTop, 'numero_of')) ?>;
+            const ofsData = <?= json_encode(array_map(fn($r) => round((float) $r['total_heures'], 2), $chartOfsTop)) ?>;
+            new Chart(document.getElementById('chartOfs'), {
+                type: 'bar',
+                data: {
+                    labels: ofsLabels,
+                    datasets: [{
+                        data: ofsData,
+                        backgroundColor: ofsLabels.map((_, i) => palette[i % palette.length] + 'BB'),
+                        borderColor: ofsLabels.map((_, i) => palette[i % palette.length]),
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    plugins: { tooltip: { callbacks: { label: ctx => ctx.parsed.x + 'h' } } },
+                    scales: {
+                        x: {
+                            grid: { color: gridColor }, beginAtZero: true,
+                            ticks: { callback: v => v + 'h' }
+                        },
+                        y: { grid: { color: gridColor }, ticks: { font: { family: 'JetBrains Mono, monospace', size: 11 } } }
+                    }
+                }
+            });
+        <?php endif; ?>
+
+        // ── Fermeture automatique sidebar sur clic lien ───────────────────
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', () => {
+                document.getElementById('sidebar').classList.remove('open');
+                document.getElementById('sidebarOverlay').classList.remove('open');
+            });
+        });
+    </script>
 
     <!-- ═══ BOTTOM NAVIGATION MOBILE ═══ -->
     <nav class="mobile-bottom-nav">

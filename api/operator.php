@@ -161,14 +161,14 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
             </div>
 
             <nav style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 2rem;">
-                <button class="btn btn-primary" onclick="switchTab('saisie')" id="nav-saisie" style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;">
-                    <span>📝</span> Saisie Rapide
+                <button class="btn btn-primary sidebar-link" onclick="switchTab('saisie')" id="nav-saisie" style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;">
+                    <span>&#128221;</span> Saisie Rapide
                 </button>
-                <button class="btn btn-ghost" onclick="switchTab('semaine')" id="nav-semaine" style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;">
-                    <span>📅</span> Ma Semaine
+                <button class="btn btn-ghost sidebar-link" onclick="switchTab('semaine')" id="nav-semaine" style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;">
+                    <span>&#128197;</span> Ma Semaine
                 </button>
-                <a href="profile.php" class="btn btn-ghost" style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem; text-decoration: none; color: inherit;">
-                    <span>👤</span> Mon Profil
+                <a href="profile.php" class="btn btn-ghost sidebar-link" style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem; text-decoration: none; color: inherit;">
+                    <span>&#128100;</span> Mon Profil
                 </a>
             </nav>
 
@@ -240,7 +240,7 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                             <div class="form-group">
                                 <label class="label">Ordre de Fabrication</label>
                                 <input type="text" name="numero_of" class="input" id="ofInput"
-                                    placeholder="Ex: OF-2025-001" autocapitalize="characters"
+                                    placeholder="Inscrivez votre numéro d'OF..." autocapitalize="characters"
                                     list="of-list" required maxlength="50"
                                     inputmode="text" autocomplete="off">
                                 <datalist id="of-list">
@@ -382,9 +382,11 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
         function switchTab(name) {
             document.getElementById('tab-saisie').style.display = name === 'saisie' ? 'block' : 'none';
             document.getElementById('tab-semaine').style.display = name === 'semaine' ? 'block' : 'none';
-            document.getElementById('nav-saisie').className = name === 'saisie' ? 'btn btn-primary' : 'btn btn-ghost';
-            document.getElementById('nav-semaine').className = name === 'semaine' ? 'btn btn-primary' : 'btn btn-ghost';
-            // Scroll en haut sur mobile lors du changement d'onglet
+            document.getElementById('nav-saisie').className = name === 'saisie' ? 'btn btn-primary sidebar-link' : 'btn btn-ghost sidebar-link';
+            document.getElementById('nav-semaine').className = name === 'semaine' ? 'btn btn-primary sidebar-link' : 'btn btn-ghost sidebar-link';
+            // Fermer la sidebar automatiquement sur mobile
+            closeSidebar();
+            // Scroll en haut
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -399,12 +401,22 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
             if (navigator.vibrate) navigator.vibrate(30);
         }
 
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('open');
+            document.getElementById('sidebarOverlay').classList.remove('open');
+        }
+
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('sidebarOverlay').classList.toggle('open');
         }
 
-        // Auto-uppercase OF input
+        // Fermer sidebar dès qu'on clique sur un lien ou bouton de nav
+        document.querySelectorAll('.sidebar-link').forEach(el => {
+            el.addEventListener('click', closeSidebar);
+        });
+
+        // Majuscules OF
         const ofInput = document.getElementById('ofInput');
         if (ofInput) ofInput.addEventListener('input', function() { this.value = this.value.toUpperCase(); });
     </script>
