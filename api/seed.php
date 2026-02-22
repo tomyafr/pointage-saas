@@ -8,6 +8,12 @@ if (!isset($_GET['token']) || $_GET['token'] !== 'lenoir123!') {
 $db = getDB();
 
 try {
+    // Forcer le rollback au cas où la connexion persistante est dans une transac bloquée (typique de PgBouncer / Neon / Prisma en serverless)
+    $db->exec('ROLLBACK');
+} catch (Exception $e) {
+}
+
+try {
     // Liste des OFs fictifs
     $ofs = ['OF-MAGNET-A1', 'OF-MAGNET-B2', 'OF-ELEC-404', 'OF-MEC-999', 'OF-BOBIN-X7', 'OF-TEST-2026', 'OF-URGENT-01'];
 
@@ -31,16 +37,16 @@ try {
             $of = $ofs[array_rand($ofs)];
             $heuresDec = rand(4, 30) * 0.25;
 
-            // PostgreSQL attend un integer/string true/false
+            // Boolean en string ou int pour postgresql
             $synced = (rand(0, 10) > 3) ? 'true' : 'false';
 
             $insert = $db->prepare('INSERT INTO pointages (user_id, numero_of, heures, date_pointage, synced_bc) VALUES (?, ?, ?, ?, ?)');
-            $insert->execute([$uid, $of, $heuresDec, $datePointage, $synced]);
+            $insert->execute([$uid, $of, $heuresDec, $datePointage, filter_var($synced, FILTER_VALIDATE_BOOLEAN) ? 1 : 0]);
             $count++;
         }
     }
 
     echo "SUCCESS: $count pointages fictifs ajoutés avec succès.";
 } catch (Exception $e) {
-    echo "ERROR: " . $e->getMessage() . " sur l'OF " . $of;
+    echo "ERROR: " . $e->getMessage();
 }
