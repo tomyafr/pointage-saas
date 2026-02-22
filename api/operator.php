@@ -132,13 +132,6 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
     </style>
 </head>
 <body>
-    <!-- Vido Background Ambiance (Fume) -->
-    <div class="video-smoke-background">
-        <video autoplay muted loop playsinline id="bgVideoSmoke">
-            <source src="/assets/video-fumee-blanche-faible.mp4" type="video/mp4">
-        </video>
-    </div>
-
     <!-- ═══ HEADER MOBILE (visible uniquement sur smartphone) ═══ -->
     <header class="mobile-header">
         <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir" class="mobile-header-logo"

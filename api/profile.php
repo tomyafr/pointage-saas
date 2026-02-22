@@ -179,13 +179,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 </head>
 
 <body>
-    <!-- Vidéo Background Ambiance (Fumée) -->
-    <div class="video-smoke-background">
-        <video autoplay muted loop playsinline id="bgVideoSmoke">
-            <source src="/assets/video-fumee-blanche-faible.mp4" type="video/mp4">
-        </video>
-    </div>
-
     <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 

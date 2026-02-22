@@ -335,13 +335,6 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
 </head>
 
 <body>
-    <!-- Vidéo Background Ambiance (Fumée) -->
-    <div class="video-smoke-background">
-        <video autoplay muted loop playsinline id="bgVideoSmoke">
-            <source src="/assets/video-fumee-blanche-faible.mp4" type="video/mp4">
-        </video>
-    </div>
-
     <!-- ═══ HEADER MOBILE (visible uniquement sur smartphone) ═══ -->
     <header class="mobile-header">
         <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir" class="mobile-header-logo"
@@ -453,31 +446,40 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
             </div>
 
             <!-- Graphiques -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;" class="charts-grid animate-in-delay-1">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;"
+                class="charts-grid animate-in-delay-1">
                 <!-- Heures par opérateur -->
                 <div class="card glass" style="padding: 1.5rem;">
-                    <h4 style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem;">&#128101; Heures / Opérateur</h4>
+                    <h4
+                        style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem;">
+                        &#128101; Heures / Opérateur</h4>
                     <?php if (!empty($chartOperateurs)): ?>
-                    <canvas id="chartOperateurs" height="220"></canvas>
+                        <canvas id="chartOperateurs" height="220"></canvas>
                     <?php else: ?>
-                    <p style="text-align:center;color:var(--text-dim);font-size:0.8rem;padding:2rem 0;">Aucun pointage cette semaine</p>
+                        <p style="text-align:center;color:var(--text-dim);font-size:0.8rem;padding:2rem 0;">Aucun pointage
+                            cette semaine</p>
                     <?php endif; ?>
                 </div>
                 <!-- Heures par jour -->
                 <div class="card glass" style="padding: 1.5rem;">
-                    <h4 style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem;">&#128197; Heures / Jour</h4>
+                    <h4
+                        style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem;">
+                        &#128197; Heures / Jour</h4>
                     <?php if (!empty($chartJours)): ?>
-                    <canvas id="chartJours" height="220"></canvas>
+                        <canvas id="chartJours" height="220"></canvas>
                     <?php else: ?>
-                    <p style="text-align:center;color:var(--text-dim);font-size:0.8rem;padding:2rem 0;">Aucun pointage cette semaine</p>
+                        <p style="text-align:center;color:var(--text-dim);font-size:0.8rem;padding:2rem 0;">Aucun pointage
+                            cette semaine</p>
                     <?php endif; ?>
                 </div>
             </div>
             <?php if (!empty($chartOfsTop)): ?>
-            <div class="card glass animate-in-delay-1" style="padding: 1.5rem; margin-bottom: 1.5rem;">
-                <h4 style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem;">&#127942; Top OFs par Heures</h4>
-                <canvas id="chartOfs" height="90"></canvas>
-            </div>
+                <div class="card glass animate-in-delay-1" style="padding: 1.5rem; margin-bottom: 1.5rem;">
+                    <h4
+                        style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 1rem;">
+                        &#127942; Top OFs par Heures</h4>
+                    <canvas id="chartOfs" height="90"></canvas>
+                </div>
             <?php endif; ?>
 
             <div class="card glass animate-in">

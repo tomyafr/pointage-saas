@@ -159,31 +159,6 @@ body::after {
     z-index: 1;
 }
 
-/* ═══════════ SMOKE VIDEO (Dashboard) ═══════════ */
-.video-smoke-background {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -3;
-    overflow: hidden;
-    opacity: 0.25;
-    pointer-events: none;
-}
-
-#bgVideoSmoke {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    min-width: 100%;
-    min-height: 100%;
-    width: auto;
-    height: auto;
-    transform: translate(-50%, -50%);
-    object-fit: cover;
-}
-
 /* ═══════════ INPUT CLEAR BUTTON ═══════════ */
 .input-clear {
     position: absolute;
