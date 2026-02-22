@@ -281,6 +281,13 @@ h4 {
 .input::placeholder {
     color: var(--text-dim);
     font-weight: 400;
+    text-align: left;
+}
+
+/* Force l'alignement à gauche dans les input wrappers (champs MDP) */
+.input-wrapper .input,
+.p-password {
+    text-align: left;
 }
 
 .input:focus {
@@ -977,38 +984,9 @@ input[type="checkbox"] {
         display: block;
     }
 
-    /* ── Hamburger : fix overlap avec le logo ──
-       Le bouton est fixed top-left mais le header
-       a maintenant padding-left pour ne pas se chevaucher */
+    /* Hamburger visible sur mobile */
     .mobile-menu-toggle {
         display: flex;
-        /* Aligné exactement avec le header */
-        top: 0;
-        height: var(--mobile-header-height);
-        border-radius: 0;
-        background: transparent;
-        border: none;
-        border-right: 1px solid var(--glass-border);
-        /* Légèrement plus large pour être confortable */
-        width: 50px;
-    }
-
-    /* Le logo dans le header est masqué sur mobile
-       (le hamburger prend sa place visuellement) */
-    .mobile-header-logo {
-        display: none;
-    }
-
-    /* Le header laisse de la place au hamburger à gauche */
-    .mobile-header {
-        padding-left: 54px;
-        gap: 0.5rem;
-    }
-
-    /* Titre du header plus visible */
-    .mobile-header-title {
-        font-size: 1rem;
-        flex: 1;
     }
 
     /* ── Main content ── */
