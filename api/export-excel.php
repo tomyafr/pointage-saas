@@ -14,9 +14,17 @@ requireAuth('chef');
 $db = getDB();
 $week = getCurrentWeekDates();
 
-// Filtres
+// Filtres — validation stricte des paramètres GET
 $filterWeek = $_GET['week'] ?? 'current';
+// Whitelist : seules valeurs autorisées
+if (!in_array($filterWeek, ['current', 'last'], true)) {
+    $filterWeek = 'current';
+}
+
+// Filtre OF : nettoyage et limitation de longueur (anti-injection)
 $filterOf = trim($_GET['of'] ?? '');
+$filterOf = preg_replace('/[^\w\s\-\/]/', '', $filterOf); // Garde seulement alphanum + tirets + /
+$filterOf = substr($filterOf, 0, 50); // Limite à 50 caractères
 
 if ($filterWeek === 'last') {
     $dateDebut = date('Y-m-d', strtotime($week['monday'] . ' -7 days'));

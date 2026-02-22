@@ -11,16 +11,31 @@ $messageType = '';
 
 // Traitement du formulaire de saisie
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    // Vérification CSRF pour toutes les actions POST
+    verifyCsrfToken();
+
     if ($_POST['action'] === 'saisir') {
         $numeroOf = strtoupper(trim($_POST['numero_of'] ?? ''));
         $heures = floatval($_POST['heures'] ?? 0);
         $datePointage = $_POST['date_pointage'] ?? $today;
 
+        // Validation du numéro OF
         if (empty($numeroOf)) {
             $message = 'Le numéro d\'OF est obligatoire.';
             $messageType = 'error';
+        } elseif (strlen($numeroOf) > 50) {
+            $message = 'Le numéro d\'OF est trop long (max 50 caractères).';
+            $messageType = 'error';
         } elseif ($heures <= 0 || $heures > 24) {
             $message = 'Le nombre d\'heures doit être entre 0.25 et 24.';
+            $messageType = 'error';
+        } elseif (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $datePointage)) {
+            // Validation format de date
+            $message = 'Format de date invalide.';
+            $messageType = 'error';
+        } elseif ($datePointage < $week['monday'] || $datePointage > $week['sunday']) {
+            // Validation côté SERVEUR : date doit être dans la semaine courante
+            $message = 'La date doit être dans la semaine en cours.';
             $messageType = 'error';
         } else {
             try {
@@ -42,8 +57,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     } elseif ($_POST['action'] === 'supprimer') {
         $pointageId = intval($_POST['pointage_id'] ?? 0);
         if ($pointageId > 0) {
+            // Vérifier que ce pointage appartient bien à l'utilisateur courant (protection IDOR)
             $stmt = $db->prepare('DELETE FROM pointages WHERE id = ? AND user_id = ? AND synced_bc IS FALSE');
             $stmt->execute([$pointageId, $userId]);
+            logAudit('ENTRY_DELETED', "Pointage ID: $pointageId");
             $message = 'Pointage supprimé.';
             $messageType = 'success';
         }
@@ -200,6 +217,7 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                     <section>
                         <form method="POST" class="card glass">
                             <input type="hidden" name="action" value="saisir">
+                            <?= csrfField() ?>
                             <h3 style="margin-bottom: 2rem; display: flex; align-items: center; gap: 0.75rem;">
                                 <span style="font-size: 1.4rem;">⏱</span> Nouveau Pointage
                             </h3>
@@ -213,7 +231,8 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                             <div class="form-group">
                                 <label class="label">Ordre de Fabrication</label>
                                 <input type="text" name="numero_of" class="input" id="ofInput"
-                                    placeholder="Ex: OF-2025-001" autocapitalize="characters" list="of-list" required>
+                                    placeholder="Ex: OF-2025-001" autocapitalize="characters"
+                                    list="of-list" required maxlength="50">
                                 <datalist id="of-list">
                                     <?php foreach ($ofsUtilises as $of): ?>
                                         <option value="<?= htmlspecialchars($of) ?>">
@@ -265,7 +284,8 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                                             <?php if (!$p['synced_bc']): ?>
                                                 <form method="POST" onsubmit="return confirm('Supprimer ce pointage ?')">
                                                     <input type="hidden" name="action" value="supprimer">
-                                                    <input type="hidden" name="pointage_id" value="<?= $p['id'] ?>">
+                                                    <?= csrfField() ?>
+                                                    <input type="hidden" name="pointage_id" value="<?= intval($p['id']) ?>">
                                                     <button type="submit" class="btn btn-ghost" style="padding: 0.4rem 0.6rem; color: var(--error); border-color: rgba(244, 63, 94, 0.15); font-size: 0.85rem;">✕</button>
                                                 </form>
                                             <?php else: ?>
@@ -342,7 +362,7 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
             </div>
 
             <div class="app-footer">
-                Raoul Lenoir SAS · <a href="privacy.php" style="color: inherit; text-decoration: underline;">RGPD & Confidentialité</a> · V<?= APP_VERSION ?>
+                Raoul Lenoir SAS · <a href="privacy.php" style="color: inherit; text-decoration: underline;">RGPD &amp; Confidentialité</a>
             </div>
         </main>
     </div>

@@ -7,9 +7,17 @@ $week = getCurrentWeekDates();
 $message = '';
 $messageType = '';
 
-// Filtres
+// Filtres — validation stricte des paramètres GET
+// Whitelist sur la valeur de la semaine
 $filterWeek = $_GET['week'] ?? 'current';
+if (!in_array($filterWeek, ['current', 'last'], true)) {
+    $filterWeek = 'current';
+}
+
+// Filtre OF : nettoyage et limitation de longueur
 $filterOf = trim($_GET['of'] ?? '');
+$filterOf = preg_replace('/[^\w\s\-\/]/', '', $filterOf);
+$filterOf = substr($filterOf, 0, 50);
 
 if ($filterWeek === 'current') {
     $dateDebut = $week['monday'];
@@ -24,6 +32,9 @@ if ($filterWeek === 'current') {
 
 // Traitement sync BC
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    // Vérification CSRF
+    verifyCsrfToken();
+
     if ($_POST['action'] === 'sync_bc') {
         $pointageIds = $_POST['pointage_ids'] ?? [];
 
@@ -433,6 +444,7 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
 
                 <form method="POST" id="syncForm">
                     <input type="hidden" name="action" value="sync_bc">
+                    <?= csrfField() ?>
 
                     <div style="overflow-x: auto;">
                         <table class="chef-table" style="width: 100%; border-collapse: collapse;">
@@ -590,8 +602,8 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
             </div>
 
             <div class="app-footer">
-                Raoul Lenoir SAS · <a href="privacy.php" style="color: inherit; text-decoration: underline;">RGPD &
-                    Confidentialité</a> · V<?= APP_VERSION ?>
+                Raoul Lenoir SAS · <a href="privacy.php" style="color: inherit; text-decoration: underline;">RGPD &amp;
+                    Confidentialité</a>
             </div>
         </main>
     </div>

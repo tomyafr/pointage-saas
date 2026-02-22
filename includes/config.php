@@ -1,14 +1,29 @@
 <?php
-// Debugging
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 // ============================================
-// CONFIGURATION - À adapter selon votre hébergement Hostinger
+// CONFIGURATION - Pointage Atelier SaaS
 // ============================================
 
-// Base de données
+// Production: désactiver l'affichage des erreurs
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(0);
+
+// ============================================
+// HEADERS DE SÉCURITÉ HTTP
+// ============================================
+// Supprimer le header X-Powered-By (exposition de la version PHP)
+header_remove('X-Powered-By');
+
+// Headers de sécurité essentiels
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('X-XSS-Protection: 1; mode=block');
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'self'; connect-src 'self';");
+
+// ============================================
+// BASE DE DONNÉES
+// ============================================
 define('DB_HOST', getenv('DB_HOST') ?: 'localhost');
 define('DB_NAME', getenv('DB_NAME') ?: 'pointage_saas');
 define('DB_USER', getenv('DB_USER') ?: 'root');
@@ -30,16 +45,24 @@ define('APP_NAME', 'Pointage Atelier');
 define('APP_VERSION', '2.1.0');
 define('SESSION_TIMEOUT', 28800); // 8 heures
 
+// Politique de mot de passe
+define('PASSWORD_MIN_LENGTH', 12);
+define('PASSWORD_REQUIRE_UPPERCASE', true);
+define('PASSWORD_REQUIRE_LOWERCASE', true);
+define('PASSWORD_REQUIRE_NUMBER', true);
+define('PASSWORD_REQUIRE_SPECIAL', true);
+
 // Timezone
 date_default_timezone_set('Europe/Paris');
 
-// Connexion PDO (PostgreSQL pour Vercel)
+// ============================================
+// CONNEXION PDO (PostgreSQL pour Vercel)
+// ============================================
 function getDB()
 {
     static $pdo = null;
     if ($pdo === null) {
         try {
-            // 1. Tenter de récupérer les variables individuelles (Vercel ou Neon)
             $host = getenv('POSTGRES_HOST') ?: getenv('PGHOST');
             $db = getenv('POSTGRES_DATABASE') ?: getenv('PGDATABASE');
             $user = getenv('POSTGRES_USER') ?: getenv('PGUSER');
@@ -48,21 +71,16 @@ function getDB()
             if ($host) {
                 $dsn = "pgsql:host=$host;port=5432;dbname=$db;sslmode=require";
             } else {
-                // 2. Repli sur DATABASE_URL si les variables individuelles sont absentes
                 $dbUrl = getenv('DATABASE_URL') ?: getenv('POSTGRES_URL');
                 if ($dbUrl) {
-                    $dsn = str_replace('postgres://', 'pgsql:', $dbUrl);
-                    // Nettoyage si format URL
-                    if (strpos($dsn, 'pgsql:') === 0) {
-                        $parts = parse_url($dbUrl);
-                        $host = $parts['host'];
-                        $db = ltrim($parts['path'], '/');
-                        $user = $parts['user'];
-                        $pass = $parts['pass'];
-                        $dsn = "pgsql:host=$host;port=5432;dbname=$db;sslmode=require";
-                    }
+                    $parts = parse_url($dbUrl);
+                    $host = $parts['host'];
+                    $db = ltrim($parts['path'], '/');
+                    $user = $parts['user'];
+                    $pass = $parts['pass'];
+                    $dsn = "pgsql:host=$host;port=5432;dbname=$db;sslmode=require";
                 } else {
-                    die('Erreur : Variables de base de données (POSTGRES_HOST ou DATABASE_URL) non trouvées.');
+                    die('Erreur : Variables de base de données non trouvées.');
                 }
             }
 
@@ -72,44 +90,99 @@ function getDB()
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
         } catch (PDOException $e) {
-            die('Erreur de connexion à la base de données PostgreSQL : ' . $e->getMessage());
+            // Ne pas exposer le message d'erreur réel en production
+            die('Erreur de connexion à la base de données.');
         }
     }
     return $pdo;
 }
 
-// Démarrer la session sécurisée
+// ============================================
+// SESSION SÉCURISÉE
+// ============================================
 function startSecureSession()
 {
     if (session_status() === PHP_SESSION_NONE) {
+        // Configuration sécurisée de la session
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+            || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+
+        session_set_cookie_params([
+            'lifetime' => SESSION_TIMEOUT,
+            'path' => '/',
+            'domain' => '',
+            'secure' => $isHttps,   // Secure uniquement en HTTPS
+            'httponly' => true,        // HttpOnly: inaccessible via JS (anti-XSS)
+            'samesite' => 'Strict',   // SameSite: protection CSRF
+        ]);
         session_start();
     }
 
-    // Restaurer depuis le cookie si la session PHP est vide (important pour Vercel)
+    // Vérification du timeout de session
+    if (isset($_SESSION['login_time']) && (time() - $_SESSION['login_time']) > SESSION_TIMEOUT) {
+        session_unset();
+        session_destroy();
+        startSecureSession();
+        return;
+    }
+
+    // Restaurer depuis le cookie de secours si session PHP vide (important Vercel)
     if (!isset($_SESSION['user_id']) && isset($_COOKIE['APP_SESSION_BACKUP'])) {
-        $data = json_decode(base64_decode($_COOKIE['APP_SESSION_BACKUP']), true);
-        if ($data && isset($data['user_id'])) {
-            $_SESSION['user_id'] = $data['user_id'];
-            $_SESSION['user_nom'] = $data['user_nom'];
-            $_SESSION['user_prenom'] = $data['user_prenom'];
-            $_SESSION['role'] = $data['role'];
+        $raw = $_COOKIE['APP_SESSION_BACKUP'];
+        // Vérification signature HMAC avant de restaurer
+        $secret = getenv('SESSION_SECRET') ?: 'default-secret-change-in-prod';
+        $parts = explode('.', $raw, 2);
+        if (count($parts) === 2) {
+            [$payload, $sig] = $parts;
+            $expected = hash_hmac('sha256', $payload, $secret);
+            if (hash_equals($expected, $sig)) {
+                $data = json_decode(base64_decode($payload), true);
+                if (
+                    $data && isset($data['user_id']) && isset($data['ts'])
+                    && (time() - $data['ts']) < SESSION_TIMEOUT
+                ) {
+                    $_SESSION['user_id'] = $data['user_id'];
+                    $_SESSION['user_nom'] = $data['user_nom'];
+                    $_SESSION['user_prenom'] = $data['user_prenom'];
+                    $_SESSION['role'] = $data['role'];
+                    $_SESSION['login_time'] = $data['ts'];
+                }
+            }
         }
     }
 }
 
-// Enregistrer les infos en cookie de secours
+// Enregistrer les infos en cookie de secours (signé HMAC)
 function setSessionBackup()
 {
-    $data = base64_encode(json_encode([
+    $secret = getenv('SESSION_SECRET') ?: 'default-secret-change-in-prod';
+    $payload = base64_encode(json_encode([
         'user_id' => $_SESSION['user_id'] ?? '',
         'user_nom' => $_SESSION['user_nom'] ?? '',
         'user_prenom' => $_SESSION['user_prenom'] ?? '',
-        'role' => $_SESSION['role'] ?? ''
+        'role' => $_SESSION['role'] ?? '',
+        'ts' => time(),
     ]));
-    setcookie('APP_SESSION_BACKUP', $data, time() + 3600 * 24, '/', '', false, true);
+    $sig = hash_hmac('sha256', $payload, $secret);
+    $data = $payload . '.' . $sig;
+
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+
+    setcookie('APP_SESSION_BACKUP', $data, [
+        'expires' => time() + SESSION_TIMEOUT,
+        'path' => '/',
+        'domain' => '',
+        'secure' => $isHttps,
+        'httponly' => true,
+        'samesite' => 'Strict',
+    ]);
 }
 
-// Vérifier l'authentification
+// ============================================
+// AUTHENTIFICATION
+// ============================================
 function requireAuth($role = null)
 {
     startSecureSession();
@@ -118,16 +191,115 @@ function requireAuth($role = null)
         exit;
     }
     if ($role && $_SESSION['role'] !== $role) {
+        // Journaliser la tentative d'accès non autorisée
+        logAudit('UNAUTHORIZED_ACCESS', "Role requis: $role, Role actuel: " . ($_SESSION['role'] ?? 'none'));
         header('Location: index.php');
         exit;
     }
+    // Vérifier si le changement de mot de passe est obligatoire
+    if (isset($_SESSION['must_change_password']) && $_SESSION['must_change_password']) {
+        $currentPage = basename($_SERVER['PHP_SELF']);
+        if ($currentPage !== 'profile.php' && $currentPage !== 'logout.php') {
+            header('Location: profile.php?force=1');
+            exit;
+        }
+    }
 }
 
-// Obtenir la semaine courante (lundi à dimanche)
+// ============================================
+// TOKEN CSRF
+// ============================================
+/**
+ * Génère (ou récupère) le token CSRF de la session courante
+ */
+function getCsrfToken(): string
+{
+    startSecureSession();
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/**
+ * Vérifie le token CSRF soumis dans un formulaire POST
+ * Termine le script avec une erreur 403 si invalide
+ */
+function verifyCsrfToken(): void
+{
+    $submitted = $_POST['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+    $stored = $_SESSION['csrf_token'] ?? '';
+    if (empty($stored) || !hash_equals($stored, $submitted)) {
+        http_response_code(403);
+        die('Erreur de sécurité : token CSRF invalide. Veuillez recharger la page.');
+    }
+}
+
+/**
+ * Retourne un champ HTML caché avec le token CSRF
+ */
+function csrfField(): string
+{
+    return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars(getCsrfToken()) . '">';
+}
+
+// ============================================
+// POLITIQUE DE MOT DE PASSE
+// ============================================
+/**
+ * Valide un mot de passe selon la politique de sécurité
+ * Retourne un tableau d'erreurs (vide si valide)
+ */
+function validatePassword(string $password): array
+{
+    $errors = [];
+    if (strlen($password) < PASSWORD_MIN_LENGTH) {
+        $errors[] = "Le mot de passe doit contenir au moins " . PASSWORD_MIN_LENGTH . " caractères.";
+    }
+    if (PASSWORD_REQUIRE_UPPERCASE && !preg_match('/[A-Z]/', $password)) {
+        $errors[] = "Le mot de passe doit contenir au moins une lettre majuscule.";
+    }
+    if (PASSWORD_REQUIRE_LOWERCASE && !preg_match('/[a-z]/', $password)) {
+        $errors[] = "Le mot de passe doit contenir au moins une lettre minuscule.";
+    }
+    if (PASSWORD_REQUIRE_NUMBER && !preg_match('/[0-9]/', $password)) {
+        $errors[] = "Le mot de passe doit contenir au moins un chiffre.";
+    }
+    if (PASSWORD_REQUIRE_SPECIAL && !preg_match('/[\W_]/', $password)) {
+        $errors[] = "Le mot de passe doit contenir au moins un caractère spécial (!@#\$%^&*...).";
+    }
+    // Vérification listes noires communes
+    $blacklist = ['password123', 'Password123', 'password', '123456789', 'azerty123'];
+    if (in_array(strtolower($password), array_map('strtolower', $blacklist))) {
+        $errors[] = "Ce mot de passe est trop commun et n'est pas autorisé.";
+    }
+    return $errors;
+}
+
+/**
+ * Calcule le score de force d'un mot de passe (0-4)
+ */
+function getPasswordStrength(string $password): int
+{
+    $score = 0;
+    if (strlen($password) >= 12)
+        $score++;
+    if (preg_match('/[A-Z]/', $password))
+        $score++;
+    if (preg_match('/[0-9]/', $password))
+        $score++;
+    if (preg_match('/[\W_]/', $password))
+        $score++;
+    return $score;
+}
+
+// ============================================
+// UTILITAIRES DATE / SEMAINE
+// ============================================
 function getCurrentWeekDates()
 {
     $today = new DateTime();
-    $dayOfWeek = (int) $today->format('N'); // 1=lundi, 7=dimanche
+    $dayOfWeek = (int) $today->format('N');
     $monday = clone $today;
     $monday->modify('-' . ($dayOfWeek - 1) . ' days');
     $sunday = clone $monday;
@@ -148,6 +320,9 @@ function getCurrentWeekDates()
     ];
 }
 
+// ============================================
+// JOURNAL D'AUDIT
+// ============================================
 /**
  * Enregistrer une action dans le log d'audit
  */
@@ -160,7 +335,7 @@ function logAudit($action, $details = '')
             $_SESSION['user_id'] ?? null,
             $action,
             $details,
-            $_SERVER['REMOTE_ADDR']
+            $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'],
         ]);
     } catch (Exception $e) {
         // On ne bloque pas l'app si le log échoue

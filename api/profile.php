@@ -7,7 +7,13 @@ $messageType = '';
 $userId = $_SESSION['user_id'];
 $db = getDB();
 
+// Forcer le changement si flag actif
+$forceChange = !empty($_GET['force']) || !empty($_SESSION['must_change_password']);
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    // Vérification CSRF
+    verifyCsrfToken();
+
     if ($_POST['action'] === 'change_password') {
         $oldPass = $_POST['old_password'] ?? '';
         $newPass = $_POST['new_password'] ?? '';
@@ -18,20 +24,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $user = $stmt->fetch();
 
         if ($user && password_verify($oldPass, $user['password_hash'])) {
-            if (strlen($newPass) < 6) {
-                $message = "Le nouveau mot de passe est trop court (min 6 caractères).";
+            // Vérifier la politique de mot de passe forte
+            $policyErrors = validatePassword($newPass);
+            if (!empty($policyErrors)) {
+                $message = implode('<br>', $policyErrors);
                 $messageType = "error";
             } elseif ($newPass !== $confirmPass) {
                 $message = "Les nouveaux mots de passe ne correspondent pas.";
                 $messageType = "error";
+            } elseif ($newPass === $oldPass) {
+                $message = "Le nouveau mot de passe doit être différent de l'ancien.";
+                $messageType = "error";
             } else {
-                $newHash = password_hash($newPass, PASSWORD_BCRYPT);
-                $update = $db->prepare('UPDATE users SET password_hash = ? WHERE id = ?');
+                $newHash = password_hash($newPass, PASSWORD_BCRYPT, ['cost' => 12]);
+                $update = $db->prepare('UPDATE users SET password_hash = ?, must_change_password = FALSE WHERE id = ?');
                 $update->execute([$newHash, $userId]);
 
+                // Supprimer le flag de changement obligatoire
+                $_SESSION['must_change_password'] = false;
+
                 logAudit('PASSWORD_CHANGE', "User ID: $userId");
-                $message = "Mot de passe mis à jour avec succès.";
+                $message = "✓ Mot de passe mis à jour avec succès.";
                 $messageType = "success";
+                $forceChange = false;
             }
         } else {
             $message = "L'ancien mot de passe est incorrect.";
@@ -68,6 +83,98 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             display: flex;
             align-items: center;
         }
+
+        /* Indicateur de force du mot de passe */
+        .strength-bar-container {
+            margin-top: 0.5rem;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .strength-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease, background 0.3s ease;
+            width: 0%;
+        }
+
+        .strength-label {
+            font-size: 0.65rem;
+            margin-top: 0.3rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .strength-0 {
+            background: transparent;
+        }
+
+        .strength-1 {
+            background: #ef4444;
+            width: 25%;
+        }
+
+        .strength-2 {
+            background: #f97316;
+            width: 50%;
+        }
+
+        .strength-3 {
+            background: #eab308;
+            width: 75%;
+        }
+
+        .strength-4 {
+            background: #22c55e;
+            width: 100%;
+        }
+
+        .policy-list {
+            margin: 0.75rem 0 0 0;
+            padding: 0;
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .policy-list li {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: color 0.2s;
+        }
+
+        .policy-list li .check {
+            font-size: 0.75rem;
+        }
+
+        .policy-list li.ok {
+            color: #22c55e;
+        }
+
+        .policy-list li.fail {
+            color: var(--error);
+        }
+
+        .force-banner {
+            margin-bottom: 2rem;
+            padding: 1.25rem 1.5rem;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: var(--radius-md);
+            color: #fca5a5;
+            font-size: 0.9rem;
+        }
+
+        .force-banner strong {
+            color: #ef4444;
+        }
     </style>
 </head>
 
@@ -95,10 +202,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             </div>
 
             <nav style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 2rem;">
-                <a href="<?= $_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php' ?>" class="btn btn-ghost"
-                    style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem; text-decoration: none; color: inherit;">
-                    <span>🏠</span> Tableau de Bord
-                </a>
+                <?php if (!$forceChange): ?>
+                    <a href="<?= $_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php' ?>" class="btn btn-ghost"
+                        style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem; text-decoration: none; color: inherit;">
+                        <span>🏠</span> Tableau de Bord
+                    </a>
+                <?php endif; ?>
                 <a href="profile.php" class="btn btn-primary"
                     style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem; text-decoration: none; color: inherit;">
                     <span>👤</span> Mon Profil
@@ -112,18 +221,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 <p style="font-weight: 600; font-size: 0.85rem;">
                     <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?>
                 </p>
-                <a href="logout.php" class="btn btn-ghost"
-                    style="width: 100%; margin-top: 1rem; color: var(--error); border-color: rgba(244, 63, 94, 0.15); font-size: 0.75rem; padding: 0.6rem;">
-                    Se déconnecter
-                </a>
+                <?php if (!$forceChange): ?>
+                    <a href="logout.php" class="btn btn-ghost"
+                        style="width: 100%; margin-top: 1rem; color: var(--error); border-color: rgba(244, 63, 94, 0.15); font-size: 0.75rem; padding: 0.6rem;">
+                        Se déconnecter
+                    </a>
+                <?php endif; ?>
             </div>
         </aside>
 
         <main class="main-content">
+            <?php if ($forceChange && $messageType !== 'success'): ?>
+                <div class="force-banner">
+                    <strong>⚠ Changement de mot de passe obligatoire</strong><br>
+                    Pour des raisons de sécurité, vous devez définir un nouveau mot de passe avant de continuer.
+                </div>
+            <?php endif; ?>
+
             <?php if ($message): ?>
                 <div class="alert alert-<?= $messageType ?> animate-in">
                     <span><?= $messageType === 'success' ? '✓' : '⚠' ?></span>
-                    <span><?= htmlspecialchars($message) ?></span>
+                    <span><?= $message /* Contient potentiellement des <br> de la politique */ ?></span>
                 </div>
             <?php endif; ?>
 
@@ -150,17 +268,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     </div>
                 </div>
 
-                <form method="POST" class="glass"
+                <form method="POST" class="glass" id="passwordForm"
                     style="padding: 2rem; border-radius: var(--radius-md); background: rgba(255,255,255,0.02);">
+                    <?= csrfField() ?>
                     <input type="hidden" name="action" value="change_password">
 
-                    <h4 style="margin-bottom: 1.5rem; color: var(--primary);">🔒 Changer le mot de passe</h4>
+                    <h4 style="margin-bottom: 0.5rem; color: var(--primary);">🔒 Changer le mot de passe</h4>
+                    <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 1.5rem;">
+                        Le mot de passe doit comporter au moins 12 caractères, avec majuscule, minuscule, chiffre et
+                        caractère spécial.
+                    </p>
 
                     <div class="form-group" style="margin-bottom: 1.25rem;">
                         <label class="label">Ancien mot de passe</label>
                         <div class="input-wrapper">
                             <input type="password" name="old_password" class="input p-password" required
-                                placeholder="Votre mot de passe actuel" style="flex: 1;">
+                                placeholder="Votre mot de passe actuel" style="flex: 1;" maxlength="128">
                             <button type="button" class="password-toggle" onclick="togglePass(this)">👁</button>
                         </div>
                     </div>
@@ -169,18 +292,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         <div class="form-group">
                             <label class="label">Nouveau mot de passe</label>
                             <div class="input-wrapper">
-                                <input type="password" name="new_password" class="input p-password" required
-                                    placeholder="Min. 6 car." style="flex: 1;">
+                                <input type="password" name="new_password" id="newPassword" class="input p-password"
+                                    required placeholder="Min. 12 car." style="flex: 1;" maxlength="128"
+                                    oninput="updateStrength(this.value)">
                                 <button type="button" class="password-toggle" onclick="togglePass(this)">👁</button>
                             </div>
+                            <!-- Indicateur de force -->
+                            <div class="strength-bar-container">
+                                <div class="strength-bar" id="strengthBar"></div>
+                            </div>
+                            <p class="strength-label" id="strengthLabel" style="color: var(--text-dim);">—</p>
+                            <!-- Liste des règles -->
+                            <ul class="policy-list" id="policyList">
+                                <li id="rule-len"><span class="check">○</span> 12 caractères minimum</li>
+                                <li id="rule-upper"><span class="check">○</span> Une lettre majuscule</li>
+                                <li id="rule-lower"><span class="check">○</span> Une lettre minuscule</li>
+                                <li id="rule-num"><span class="check">○</span> Un chiffre</li>
+                                <li id="rule-spec"><span class="check">○</span> Un caractère spécial</li>
+                            </ul>
                         </div>
                         <div class="form-group">
                             <label class="label">Confirmation</label>
                             <div class="input-wrapper">
-                                <input type="password" name="confirm_password" class="input p-password" required
-                                    placeholder="Répéter" style="flex: 1;">
+                                <input type="password" name="confirm_password" id="confirmPassword"
+                                    class="input p-password" required placeholder="Répéter" style="flex: 1;"
+                                    maxlength="128" oninput="checkMatch()">
                                 <button type="button" class="password-toggle" onclick="togglePass(this)">👁</button>
                             </div>
+                            <p id="matchLabel" style="font-size: 0.65rem; margin-top: 0.4rem; font-weight: 600;"></p>
                         </div>
                     </div>
 
@@ -191,8 +330,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             </div>
 
             <div class="app-footer">
-                Raoul Lenoir SAS · <a href="privacy.php" style="color: inherit; text-decoration: underline;">RGPD &
-                    Confidentialité</a> · V<?= APP_VERSION ?>
+                Raoul Lenoir SAS · <a href="privacy.php" style="color: inherit; text-decoration: underline;">RGPD &amp;
+                    Confidentialité</a>
             </div>
         </main>
     </div>
@@ -207,6 +346,58 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
             input.setAttribute('type', type);
             btn.textContent = type === 'password' ? '👁' : '🔒';
+        }
+
+        // Indicateur de force du mot de passe
+        function updateStrength(val) {
+            const bar = document.getElementById('strengthBar');
+            const label = document.getElementById('strengthLabel');
+            let score = 0;
+            const checks = {
+                'rule-len': val.length >= 12,
+                'rule-upper': /[A-Z]/.test(val),
+                'rule-lower': /[a-z]/.test(val),
+                'rule-num': /[0-9]/.test(val),
+                'rule-spec': /[\W_]/.test(val),
+            };
+            for (const [id, ok] of Object.entries(checks)) {
+                const li = document.getElementById(id);
+                if (ok) {
+                    li.classList.add('ok');
+                    li.classList.remove('fail');
+                    li.querySelector('.check').textContent = '✓';
+                    score++;
+                } else {
+                    li.classList.remove('ok');
+                    if (val.length > 0) {
+                        li.classList.add('fail');
+                        li.querySelector('.check').textContent = '✕';
+                    } else {
+                        li.classList.remove('fail');
+                        li.querySelector('.check').textContent = '○';
+                    }
+                }
+            }
+            bar.className = 'strength-bar strength-' + score;
+            const labels = ['', 'Très faible', 'Faible', 'Moyen', 'Fort'];
+            const colors = ['var(--text-dim)', '#ef4444', '#f97316', '#eab308', '#22c55e'];
+            label.textContent = val.length > 0 ? (labels[score] || 'Fort') : '—';
+            label.style.color = val.length > 0 ? (colors[score] || '#22c55e') : 'var(--text-dim)';
+            checkMatch();
+        }
+
+        function checkMatch() {
+            const newPass = document.getElementById('newPassword').value;
+            const confirm = document.getElementById('confirmPassword').value;
+            const ml = document.getElementById('matchLabel');
+            if (!confirm) { ml.textContent = ''; return; }
+            if (newPass === confirm) {
+                ml.textContent = '✓ Les mots de passe correspondent';
+                ml.style.color = '#22c55e';
+            } else {
+                ml.textContent = '✕ Ne correspond pas';
+                ml.style.color = '#ef4444';
+            }
         }
     </script>
 </body>
