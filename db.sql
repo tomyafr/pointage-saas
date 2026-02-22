@@ -116,3 +116,12 @@ ON CONFLICT (nom) DO UPDATE
 -- ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT TRUE;
 -- UPDATE users SET must_change_password = TRUE;
 
+
+-- ============================================
+-- TABLE TRACKING EN DIRECT
+-- ============================================
+CREATE TABLE IF NOT EXISTS active_sessions (
+    user_id INT PRIMARY KEY REFERENCES users(id),
+    numero_of VARCHAR(50) NOT NULL,
+    start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

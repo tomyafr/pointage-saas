@@ -3,6 +3,10 @@ require_once __DIR__ . '/../includes/config.php';
 requireAuth('operateur');
 
 $db = getDB();
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS active_sessions (user_id INT PRIMARY KEY REFERENCES users(id), numero_of VARCHAR(50) NOT NULL, start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+} catch (Exception $e) {}
+
 $userId = $_SESSION['user_id'];
 $week = getCurrentWeekDates();
 $today = date('Y-m-d');
@@ -64,8 +68,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $message = 'Pointage supprimé.';
             $messageType = 'success';
         }
+    } elseif ($_POST['action'] === 'start_production') {
+        $numeroOf = strtoupper(trim($_POST['numero_of'] ?? ''));
+        if (empty($numeroOf) || strlen($numeroOf) > 50) {
+            $message = 'Numéro OF invalide.';
+            $messageType = 'error';
+        } else {
+            try {
+                // Vérifier s'il a déjà une session
+                $stmt = $db->prepare('SELECT numero_of FROM active_sessions WHERE user_id = ?');
+                $stmt->execute([$userId]);
+                if ($stmt->fetch()) {
+                    $message = 'Vous avez déjà une production en cours.';
+                    $messageType = 'error';
+                } else {
+                    $stmt = $db->prepare('INSERT INTO active_sessions (user_id, numero_of) VALUES (?, ?)');
+                    $stmt->execute([$userId, $numeroOf]);
+                    logAudit('PROD_START', "OF: $numeroOf");
+                    $message = "Production démarrée sur l'OF {$numeroOf}";
+                    $messageType = 'success';
+                }
+            } catch (PDOException $e) {
+                $message = 'Erreur lors du démarrage.';
+                $messageType = 'error';
+            }
+        }
+    } elseif ($_POST['action'] === 'stop_production') {
+        try {
+            $stmt = $db->prepare('SELECT numero_of, start_time FROM active_sessions WHERE user_id = ?');
+            $stmt->execute([$userId]);
+            $session = $stmt->fetch();
+            
+            if ($session) {
+                // Calculer les heures écoulées (simplifié au quart d'heure près)
+                $start = strtotime($session['start_time']);
+                $end = time();
+                $diffHours = ($end - $start) / 3600;
+                // Arrondi au quart d'heure supérieur ou le plus proche, minimum 0.25h
+                $heures = max(0.25, round($diffHours * 4) / 4);
+                $numeroOf = $session['numero_of'];
+                $datePointage = date('Y-m-d', $start); // Garder la date de début
+
+                // Insérer/Mettre à jour le pointage (cumulatif si déjà des heures ce jour-là sur cet OF)
+                $db->beginTransaction();
+                
+                $stmtInsert = $db->prepare('
+                    INSERT INTO pointages (user_id, numero_of, heures, date_pointage)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT (user_id, date_pointage, numero_of) 
+                    DO UPDATE SET heures = pointages.heures + EXCLUDED.heures, updated_at = NOW()
+                ');
+                $stmtInsert->execute([$userId, $numeroOf, $heures, $datePointage]);
+                
+                // Supprimer la session
+                $stmtDelete = $db->prepare('DELETE FROM active_sessions WHERE user_id = ?');
+                $stmtDelete->execute([$userId]);
+                
+                $db->commit();
+                
+                logAudit('PROD_STOP', "OF: $numeroOf, Heures: $heures");
+                $message = "Production terminée. {$heures}h enregistrées sur l'OF {$numeroOf}.";
+                $messageType = 'success';
+            } else {
+                $message = 'Aucune production en cours.';
+                $messageType = 'error';
+            }
+        } catch (Exception $e) {
+            if ($db->inTransaction()) $db->rollBack();
+            $message = 'Erreur lors de l’arrêt de production.';
+            $messageType = 'error';
+        }
     }
 }
+
+// Vérifier la session de prod en cours pour l'affichage
+$stmtActive = $db->prepare('SELECT numero_of, start_time FROM active_sessions WHERE user_id = ?');
+$stmtActive->execute([$userId]);
+$activeSession = $stmtActive->fetch();
 
 // Récupérer les pointages de la semaine
 $stmt = $db->prepare('
@@ -219,52 +298,105 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
             <div id="tab-saisie" class="animate-in">
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;" class="saisie-grid">
                     <section>
-                        <form method="POST" class="card glass">
-                            <input type="hidden" name="action" value="saisir">
-                            <?= csrfField() ?>
-                            <h3 style="margin-bottom: 2rem; display: flex; align-items: center; gap: 0.75rem;">
-                                <span style="font-size: 1.4rem;">&#9203;</span> Nouveau Pointage
-                            </h3>
-
-                            <div class="form-group">
-                                <label class="label">Date</label>
-                                <input type="date" name="date_pointage" class="input"
-                                    value="<?= $today ?>" min="<?= $week['monday'] ?>" max="<?= $week['sunday'] ?>" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="label">Ordre de Fabrication</label>
-                                <input type="text" name="numero_of" class="input" id="ofInput"
-                                    placeholder="Inscrivez votre numéro d'OF..." autocapitalize="characters"
-                                    list="of-list" required maxlength="50"
-                                    inputmode="text" autocomplete="off">
-                                <datalist id="of-list">
-                                    <?php foreach ($ofsUtilises as $of): ?>
-                                        <option value="<?= htmlspecialchars($of) ?>">
-                                    <?php endforeach; ?>
-                                </datalist>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="label">Heures travaillées</label>
-                                <input type="number" name="heures" id="heuresInput" class="input"
-                                    style="font-size: 2.2rem; font-weight: 900; text-align: center; color: var(--primary); height: 5rem;"
-                                    placeholder="0.0" step="0.25" min="0.25" max="24" required
-                                    inputmode="decimal">
-                                <div class="quick-hour">
-                                    <button type="button" onclick="setHeures(0.5)">0.5h</button>
-                                    <button type="button" onclick="setHeures(1)">1h</button>
-                                    <button type="button" onclick="setHeures(2)">2h</button>
-                                    <button type="button" onclick="setHeures(4)">4h</button>
-                                    <button type="button" onclick="setHeures(7)">7h</button>
-                                    <button type="button" onclick="setHeures(8)">8h</button>
+                        <?php if ($activeSession): ?>
+                            <div class="card glass" style="border: 1px solid var(--accent-cyan); background: rgba(14, 165, 233, 0.05); text-align: center;">
+                                <h3 style="margin-bottom: 1rem; color: var(--accent-cyan); display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                                    <span class="spinner" style="border-top-color: var(--accent-cyan); width: 16px; height: 16px;"></span>
+                                    PRODUCTION EN DIRECT
+                                </h3>
+                                <div style="font-family: var(--font-mono); font-size: 2.5rem; font-weight: 900; color: #fff; margin-bottom: 0.5rem;" id="liveTimer">
+                                    00:00:00
                                 </div>
+                                <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1.5rem;">
+                                    OF en cours : <strong style="color: #fff;"><?= htmlspecialchars($activeSession['numero_of']) ?></strong>
+                                </p>
+                                <form method="POST">
+                                    <?= csrfField() ?>
+                                    <input type="hidden" name="action" value="stop_production">
+                                    <button type="submit" class="btn" style="width: 100%; background: var(--error); color: white; border: none; font-size: 1rem; font-weight: bold; padding: 1.25rem;">
+                                        Arrêter et Sauvegarder (■)
+                                    </button>
+                                </form>
                             </div>
+                            
+                            <script>
+                                // Timer en direct JavaScript
+                                const startTime = new Date("<?= date('Y-m-d\TH:i:s', strtotime($activeSession['start_time'])) ?>").getTime();
+                                setInterval(() => {
+                                    const now = new Date().getTime();
+                                    const diff = Math.floor((now - startTime) / 1000);
+                                    if (diff < 0) return;
+                                    const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+                                    const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+                                    const s = String(diff % 60).padStart(2, '0');
+                                    document.getElementById('liveTimer').textContent = `${h}:${m}:${s}`;
+                                }, 1000);
+                            </script>
+                        <?php else: ?>
+                            <!-- Option 1 : Lancer un chrono en direct -->
+                            <form method="POST" class="card glass" style="margin-bottom: 1.5rem; border-color: rgba(255,179,0,0.4);">
+                                <input type="hidden" name="action" value="start_production">
+                                <?= csrfField() ?>
+                                <h3 style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.75rem;">
+                                    <span style="font-size: 1.4rem;">▶️</span> Démarrer un Chrono Live
+                                </h3>
+                                <div class="form-group" style="margin-bottom: 1rem;">
+                                    <input type="text" name="numero_of" class="input" placeholder="Numéro de l'OF (ex: OF-2024-123)"
+                                        autocapitalize="characters" list="of-list" required maxlength="50" autocomplete="off">
+                                </div>
+                                <button type="submit" class="btn" style="width: 100%; background: var(--primary); color: #000; border: none; font-weight: bold;">
+                                    Démarrer la Production
+                                </button>
+                            </form>
 
-                            <button type="submit" class="btn btn-primary" style="width: 100%; height: 3.5rem; font-size: 0.95rem;">
-                                Enregistrer le Pointage &#8594;
-                            </button>
-                        </form>
+                            <!-- Option 2 : Saisie Manuelle Classique -->
+                            <form method="POST" class="card glass">
+                                <input type="hidden" name="action" value="saisir">
+                                <?= csrfField() ?>
+                                <h3 style="margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                                    <span style="font-size: 1.2rem; opacity: 0.7;">&#9203;</span> Saisie Manuelle (A posteriori)
+                                </h3>
+
+                                <div class="form-group">
+                                    <label class="label">Date</label>
+                                    <input type="date" name="date_pointage" class="input"
+                                        value="<?= $today ?>" min="<?= $week['monday'] ?>" max="<?= $week['sunday'] ?>" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="label">Ordre de Fabrication</label>
+                                    <input type="text" name="numero_of" class="input" id="ofInput"
+                                        placeholder="Numéro OF..." autocapitalize="characters"
+                                        list="of-list" required maxlength="50"
+                                        inputmode="text" autocomplete="off">
+                                    <datalist id="of-list">
+                                        <?php foreach ($ofsUtilises as $of): ?>
+                                            <option value="<?= htmlspecialchars($of) ?>">
+                                        <?php endforeach; ?>
+                                    </datalist>
+                                </div>
+
+                                <div class="form-group">
+                                    <label class="label">Heures travaillées</label>
+                                    <input type="number" name="heures" id="heuresInput" class="input"
+                                        style="font-size: 2.2rem; font-weight: 900; text-align: center; color: var(--primary); height: 5rem;"
+                                        placeholder="0.0" step="0.25" min="0.25" max="24" required
+                                        inputmode="decimal">
+                                    <div class="quick-hour">
+                                        <button type="button" onclick="setHeures(0.5)">0.5h</button>
+                                        <button type="button" onclick="setHeures(1)">1h</button>
+                                        <button type="button" onclick="setHeures(2)">2h</button>
+                                        <button type="button" onclick="setHeures(4)">4h</button>
+                                        <button type="button" onclick="setHeures(7)">7h</button>
+                                        <button type="button" onclick="setHeures(8)">8h</button>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-ghost" style="width: 100%; height: 3.5rem; font-size: 0.95rem;">
+                                    Enregistrer le Pointage Manuel
+                                </button>
+                            </form>
+                        <?php endif; ?>
                     </section>
 
                     <section>

@@ -3,6 +3,11 @@ require_once __DIR__ . '/../includes/config.php';
 requireAuth('chef');
 
 $db = getDB();
+try {
+    $db->exec("CREATE TABLE IF NOT EXISTS active_sessions (user_id INT PRIMARY KEY REFERENCES users(id), numero_of VARCHAR(50) NOT NULL, start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+} catch (Exception $e) {
+}
+
 $week = getCurrentWeekDates();
 $message = '';
 $messageType = '';
@@ -136,6 +141,32 @@ foreach ($stmt->fetchAll() as $row) {
 $stmt = $db->prepare('SELECT * FROM sync_log ORDER BY created_at DESC LIMIT 5');
 $stmt->execute();
 $syncLogs = $stmt->fetchAll();
+
+// ── Live Tracking & Alertes Anti-Oubli ────────────────────────────────────
+$stmtLive = $db->prepare('
+    SELECT a.numero_of, a.start_time, u.nom, u.prenom, u.id as user_id
+    FROM active_sessions a
+    JOIN users u ON a.user_id = u.id
+    ORDER BY a.start_time DESC
+');
+$stmtLive->execute();
+$liveSessionsRaw = $stmtLive->fetchAll();
+
+$liveSessions = [];
+$alertesOubli = [];
+$now = time();
+
+foreach ($liveSessionsRaw as $sess) {
+    $start = strtotime($sess['start_time']);
+    $diffHours = ($now - $start) / 3600;
+    $sess['diff_hours'] = $diffHours;
+    if ($diffHours > 8) {
+        // Plus de 8h sans dépointer = alerte
+        $alertesOubli[] = $sess;
+    } else {
+        $liveSessions[] = $sess;
+    }
+}
 
 // ── Données graphiques ────────────────────────────────────────────────────
 // Heures par opérateur (semaine courante)
@@ -423,6 +454,58 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
                 <div class="alert alert-<?= $messageType ?> animate-in">
                     <span><?= $messageType === 'success' ? '✓' : ($messageType === 'info' ? 'ℹ' : '⚠') ?></span>
                     <span><?= htmlspecialchars($message) ?></span>
+                </div>
+            <?php endif; ?>
+
+            <!-- ── ALERTES ANTI-OUBLI ── -->
+            <?php if (!empty($alertesOubli)): ?>
+                <div class="alert alert-error animate-in"
+                    style="background: rgba(244, 63, 94, 0.1); border: 1px solid var(--error); border-left: 4px solid var(--error); margin-bottom: 1.5rem;">
+                    <span>⚠️</span>
+                    <div>
+                        <strong>ANOMALIE(S) DÉTECTÉE(S) : DÉPOINTAGE OUBLIÉ ?</strong>
+                        <ul style="margin-top: 0.5rem; margin-left: 1.5rem; font-size: 0.85rem;">
+                            <?php foreach ($alertesOubli as $alerte): ?>
+                                <li>
+                                    <?= htmlspecialchars($alerte['prenom'] . ' ' . $alerte['nom']) ?> sur
+                                    <strong><?= htmlspecialchars($alerte['numero_of']) ?></strong>
+                                    depuis <?= round($alerte['diff_hours'], 1) ?>h
+                                    <em style="opacity:0.7;">(démarré à
+                                        <?= date('H:i', strtotime($alerte['start_time'])) ?>)</em>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                </div>
+            <?php endif; ?>
+
+            <!-- ── LIVE DATA DASHBOARD ── -->
+            <?php if (!empty($liveSessions)): ?>
+                <div class="card glass animate-in"
+                    style="margin-bottom: 1.5rem; border-color: rgba(14, 165, 233, 0.4); padding: 1.25rem;">
+                    <h3
+                        style="font-size: 0.95rem; color: var(--accent-cyan); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span class="spinner"
+                            style="border-top-color: var(--accent-cyan); width: 14px; height: 14px; display: inline-block;"></span>
+                        PRODUCTION EN DIRECT (<?= count($liveSessions) ?>)
+                    </h3>
+                    <div style="display: flex; gap: 1rem; overflow-x: auto; padding-bottom: 0.5rem;">
+                        <?php foreach ($liveSessions as $sess): ?>
+                            <div
+                                style="min-width: 180px; flex: 1; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); padding: 1rem; border-left: 3px solid var(--accent-cyan);">
+                                <div style="font-size: 0.75rem; color: var(--text-dim); text-transform: uppercase;">
+                                    <?= htmlspecialchars($sess['numero_of']) ?>
+                                </div>
+                                <div style="font-weight: 700; font-size: 0.95rem; margin-top: 0.25rem;">
+                                    <?= htmlspecialchars($sess['prenom'] . ' ' . substr($sess['nom'], 0, 1) . '.') ?>
+                                </div>
+                                <div
+                                    style="font-size: 0.8rem; color: var(--accent-cyan); margin-top: 0.5rem; font-family: var(--font-mono);">
+                                    <?= round($sess['diff_hours'], 1) ?>h en cours
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 </div>
             <?php endif; ?>
 
