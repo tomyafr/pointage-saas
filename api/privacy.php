@@ -15,8 +15,7 @@ require_once __DIR__ . '/../includes/config.php';
     <div class="layout" style="display: flex; justify-content: center; padding: 2rem;">
         <div class="card glass animate-in" style="max-width: 800px; line-height: 1.6;">
             <div style="text-align: center; margin-bottom: 3rem;">
-                <img src="https://www.lenoir-mec.com/wp-content/uploads/2023/12/logo-lenoir-mec-blanc.svg" alt="Logo"
-                    style="height: 40px; margin-bottom: 1rem;">
+                <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir" style="height: 50px; margin-bottom: 1rem;">
                 <h1 style="font-size: 2rem;">Protection des Données</h1>
             </div>
 
