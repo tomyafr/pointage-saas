@@ -244,20 +244,21 @@ $nbOperateurs = count($statsParOperateur);
 <body>
     <!-- Header mobile -->
     <header class="mobile-header">
-        <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir" class="mobile-header-logo"
-            style="filter:brightness(0) saturate(100%) invert(73%) sepia(86%) saturate(1063%) hue-rotate(358deg) brightness(101%) contrast(106%);">
+        <button class="mobile-logo-btn" onclick="toggleSidebar()" aria-label="Menu">
+            <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir" class="mobile-header-logo"
+                style="filter:brightness(0) saturate(100%) invert(73%) sepia(86%) saturate(1063%) hue-rotate(358deg) brightness(101%) contrast(106%);">
+        </button>
         <span class="mobile-header-title">Historique</span>
         <span class="mobile-header-user">
             <?= htmlspecialchars($_SESSION['user_prenom']) ?>
         </span>
     </header>
-
-    <button class="mobile-menu-toggle" onclick="toggleSidebar()">&#9776;</button>
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <div class="dashboard-layout">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
+            <button class="sidebar-close-btn" onclick="toggleSidebar()" aria-label="Fermer">&times;</button>
             <div style="margin-bottom: 2.5rem;">
                 <a href="chef.php" class="brand-icon" style="display:block;width:180px;height:auto;margin:0 0 1rem 0;">
                     <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir">
@@ -514,8 +515,6 @@ $nbOperateurs = count($statsParOperateur);
             <a href="export-excel.php?week=<?= $filterPeriod === 'last' ? 'last' : 'current' ?>&of=<?= urlencode($filterOf) ?>"
                 class="mobile-nav-item" target="_blank"><span class="mobile-nav-icon">&#128196;</span><span
                     class="mobile-nav-label">Export</span></a>
-            <a href="profile.php" class="mobile-nav-item"><span class="mobile-nav-icon">&#128100;</span><span
-                    class="mobile-nav-label">Profil</span></a>
             <a href="logout.php" class="mobile-nav-item" style="color:var(--error);"><span
                     class="mobile-nav-icon">&#x23FB;</span><span class="mobile-nav-label">Quitter</span></a>
         </div>

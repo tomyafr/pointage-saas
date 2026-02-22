@@ -628,6 +628,13 @@ h4 {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
     flex-shrink: 0;
+    position: relative;
+    z-index: 1050;
+}
+
+.mobile-logo-btn img {
+    pointer-events: none;
+    /* L'image ne bloque pas le clic du bouton parent */
 }
 
 .mobile-logo-btn:active {

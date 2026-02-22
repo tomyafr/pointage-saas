@@ -335,21 +335,22 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
 </head>
 
 <body>
-    <!-- ═══ HEADER MOBILE (visible uniquement sur smartphone) ═══ -->
+    <!-- ═══ HEADER MOBILE ═══ -->
     <header class="mobile-header">
-        <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir" class="mobile-header-logo"
-            style="filter: brightness(0) saturate(100%) invert(73%) sepia(86%) saturate(1063%) hue-rotate(358deg) brightness(101%) contrast(106%);">
+        <button class="mobile-logo-btn" onclick="toggleSidebar()" aria-label="Menu">
+            <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir" class="mobile-header-logo"
+                style="filter:brightness(0) saturate(100%) invert(73%) sepia(86%) saturate(1063%) hue-rotate(358deg) brightness(101%) contrast(106%);">
+        </button>
         <span class="mobile-header-title">Chef d'Atelier</span>
         <span class="mobile-header-user"><?= htmlspecialchars($_SESSION['user_prenom']) ?></span>
     </header>
-
-    <!-- Mobile menu toggle -->
-    <button class="mobile-menu-toggle" onclick="toggleSidebar()">&#9776;</button>
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <div class="dashboard-layout">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
+            <!-- X fermer -->
+            <button class="sidebar-close-btn" onclick="toggleSidebar()" aria-label="Fermer">&times;</button>
             <div style="margin-bottom: 2.5rem;">
                 <a href="chef.php" class="brand-icon"
                     style="display: block; width: 180px; height: auto; margin: 0 0 1rem 0;"><img
@@ -855,10 +856,6 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
             <a href="export-excel.php?week=<?= $filterWeek ?>&of=<?= urlencode($filterOf) ?>" class="mobile-nav-item">
                 <span class="mobile-nav-icon">&#128196;</span>
                 <span class="mobile-nav-label">Export</span>
-            </a>
-            <a href="profile.php" class="mobile-nav-item">
-                <span class="mobile-nav-icon">&#128100;</span>
-                <span class="mobile-nav-label">Profil</span>
             </a>
             <a href="logout.php" class="mobile-nav-item" style="color: var(--error);">
                 <span class="mobile-nav-icon">&#x23FB;</span>

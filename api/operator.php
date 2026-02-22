@@ -132,21 +132,23 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
     </style>
 </head>
 <body>
-    <!-- ═══ HEADER MOBILE (visible uniquement sur smartphone) ═══ -->
+    <!-- ═══ HEADER MOBILE ═══ -->
     <header class="mobile-header">
-        <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir" class="mobile-header-logo"
-             style="filter: brightness(0) saturate(100%) invert(73%) sepia(86%) saturate(1063%) hue-rotate(358deg) brightness(101%) contrast(106%);">
+        <!-- Logo cliquable = ouvre le menu -->
+        <button class="mobile-logo-btn" onclick="toggleSidebar()" aria-label="Menu">
+            <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir" class="mobile-header-logo"
+                 style="filter:brightness(0) saturate(100%) invert(73%) sepia(86%) saturate(1063%) hue-rotate(358deg) brightness(101%) contrast(106%);">
+        </button>
         <span class="mobile-header-title">Mon Pointage</span>
         <span class="mobile-header-user"><?= htmlspecialchars($_SESSION['user_prenom']) ?></span>
     </header>
-
-    <!-- Mobile sidebar toggle (visible uniquement depuis sidebar) -->
-    <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <div class="dashboard-layout">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
+            <!-- Bouton fermer (X rouge) -->
+            <button class="sidebar-close-btn" onclick="toggleSidebar()" aria-label="Fermer">&times;</button>
             <div style="margin-bottom: 2.5rem;">
                 <a href="operator.php" class="brand-icon" style="display: block; width: 180px; height: auto; margin: 0 0 1rem 0;"><img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir"></a>
                 <h2 style="font-size: 1.15rem;"><span class="text-gradient">Raoul Lenoir</span></h2>
@@ -417,22 +419,20 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
     <nav class="mobile-bottom-nav">
         <div class="mobile-bottom-nav-inner">
             <button class="mobile-nav-item active" onclick="switchTab('saisie'); setActiveNav(this)" id="nav-mob-saisie">
-                <span class="mobile-nav-icon">&#9203;</span>
+                <span class="mobile-nav-icon">&#128221;</span>
                 <span class="mobile-nav-label">Saisie</span>
             </button>
             <button class="mobile-nav-item" onclick="switchTab('semaine'); setActiveNav(this)" id="nav-mob-semaine">
                 <span class="mobile-nav-icon">&#128197;</span>
                 <span class="mobile-nav-label">Semaine</span>
             </button>
-            <a href="profile.php" class="mobile-nav-item">
-                <span class="mobile-nav-icon">&#128100;</span>
-                <span class="mobile-nav-label">Profil</span>
-            </a>
             <a href="logout.php" class="mobile-nav-item" style="color: var(--error);">
                 <span class="mobile-nav-icon">&#x23FB;</span>
                 <span class="mobile-nav-label">Quitter</span>
             </a>
         </div>
     </nav>
+</body>
+</html>
 </body>
 </html>

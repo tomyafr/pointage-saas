@@ -276,7 +276,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         <label class="label">Ancien mot de passe</label>
                         <div class="input-wrapper">
                             <input type="password" name="old_password" class="input p-password" required
-                                placeholder="Votre mot de passe actuel" style="flex: 1;" maxlength="128">
+                                placeholder="Votre mot de passe actuel" style="flex: 1; text-align: left;"
+                                maxlength="128">
                             <button type="button" class="password-toggle" onclick="togglePass(this)">👁</button>
                         </div>
                     </div>
@@ -286,8 +287,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             <label class="label">Nouveau mot de passe</label>
                             <div class="input-wrapper">
                                 <input type="password" name="new_password" id="newPassword" class="input p-password"
-                                    required placeholder="Min. 12 car." style="flex: 1;" maxlength="128"
-                                    oninput="updateStrength(this.value)">
+                                    required placeholder="Min. 12 car." style="flex: 1; text-align: left;"
+                                    maxlength="128" oninput="updateStrength(this.value)">
                                 <button type="button" class="password-toggle" onclick="togglePass(this)">👁</button>
                             </div>
                             <!-- Indicateur de force -->
@@ -308,8 +309,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                             <label class="label">Confirmation</label>
                             <div class="input-wrapper">
                                 <input type="password" name="confirm_password" id="confirmPassword"
-                                    class="input p-password" required placeholder="Répéter" style="flex: 1;"
-                                    maxlength="128" oninput="checkMatch()">
+                                    class="input p-password" required placeholder="Répéter"
+                                    style="flex: 1; text-align: left;" maxlength="128" oninput="checkMatch()">
                                 <button type="button" class="password-toggle" onclick="togglePass(this)">👁</button>
                             </div>
                             <p id="matchLabel" style="font-size: 0.65rem; margin-top: 0.4rem; font-weight: 600;"></p>
