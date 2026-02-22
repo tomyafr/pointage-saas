@@ -251,7 +251,12 @@ $nbOperateurs = count($statsParOperateur);
         </button>
         <span class="mobile-header-title">Historique</span>
         <span class="mobile-header-user">
-            <?= htmlspecialchars($_SESSION['user_prenom']) ?>
+            <?php if (!empty($_SESSION['avatar'])): ?>
+                <img src="<?= htmlspecialchars($_SESSION['avatar']) ?>"
+                    style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--glass-border);">
+            <?php else: ?>
+                <?= htmlspecialchars($_SESSION['user_prenom']) ?>
+            <?php endif; ?>
         </span>
     </header>
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
@@ -287,16 +292,21 @@ $nbOperateurs = count($statsParOperateur);
             </nav>
 
             <div style="margin-top:auto;padding-top:1.5rem;border-top:1px solid var(--glass-border);">
-                <p style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.75rem;">Connecté</p>
+                <p
+                    style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.75rem;">
+                    Connecté</p>
                 <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <?php if (!empty($_SESSION['avatar'])): ?>
-                        <img src="<?= htmlspecialchars($_SESSION['avatar']) ?>" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--glass-border);">
+                        <img src="<?= htmlspecialchars($_SESSION['avatar']) ?>"
+                            style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--glass-border);">
                     <?php else: ?>
-                        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;">
+                        <div
+                            style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;">
                             <?= strtoupper(substr($_SESSION['user_prenom'], 0, 1) . substr($_SESSION['user_nom'], 0, 1)) ?>
                         </div>
                     <?php endif; ?>
-                    <p style="font-weight: 600; font-size: 0.85rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">
+                    <p
+                        style="font-weight: 600; font-size: 0.85rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">
                         <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?>
                     </p>
                 </div>
@@ -557,7 +567,8 @@ $nbOperateurs = count($statsParOperateur);
         let debounceTimer;
         function clearDebounce() {
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => document.getElementById('filterForm').submit(), 700);     }
+            debounceTimer = setTimeout(() => document.getElementById('filterForm').submit(), 700);
+        }
     </script>
 </body>
 

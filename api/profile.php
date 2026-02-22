@@ -188,7 +188,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 </head>
 
 <body>
-    <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+    <!-- ═══ HEADER MOBILE ═══ -->
+    <header class="mobile-header">
+        <button class="mobile-logo-btn"
+            onclick="window.location.href='<?= $_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php' ?>'"
+            aria-label="Retour"
+            style="background: none; border: none; padding: 0.5rem; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 1.6rem; color: var(--primary);">&larr;</span>
+        </button>
+        <span class="mobile-header-title">Mon Profil</span>
+        <span class="mobile-header-user">
+            <?php if (!empty($_SESSION['avatar'])): ?>
+                <img src="<?= htmlspecialchars($_SESSION['avatar']) ?>"
+                    style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--glass-border);">
+            <?php else: ?>
+                <?= htmlspecialchars($_SESSION['user_prenom']) ?>
+            <?php endif; ?>
+        </span>
+    </header>
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <div class="dashboard-layout">

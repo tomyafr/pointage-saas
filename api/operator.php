@@ -219,7 +219,13 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                  style="filter:brightness(0) saturate(100%) invert(73%) sepia(86%) saturate(1063%) hue-rotate(358deg) brightness(101%) contrast(106%);">
         </button>
         <span class="mobile-header-title">Mon Pointage</span>
-        <span class="mobile-header-user"><?= htmlspecialchars($_SESSION['user_prenom']) ?></span>
+        <span class="mobile-header-user">
+            <?php if (!empty($_SESSION['avatar'])): ?>
+                <img src="<?= htmlspecialchars($_SESSION['avatar']) ?>" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1px solid var(--glass-border);">
+            <?php else: ?>
+                <?= htmlspecialchars($_SESSION['user_prenom']) ?>
+            <?php endif; ?>
+        </span>
     </header>
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
