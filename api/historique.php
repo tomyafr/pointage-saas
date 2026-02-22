@@ -52,8 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $nouvelleDate = $_POST['date_pointage'] ?? '';
 
         if ($pId > 0) {
-            if (empty($nouvelOf) || !preg_match('/^4\d{5}$/', $nouvelOf)) {
-                $message = 'Numéro d\'OF invalide (doit contenir exactement 6 chiffres et commencer par 4).';
+            if (empty($nouvelOf) || strlen($nouvelOf) > 50) {
+                $message = 'Numéro d\'OF invalide.';
                 $messageType = 'error';
             } elseif ($nouvellesHeures <= 0 || $nouvellesHeures > 24) {
                 $message = 'Le nombre d\'heures doit être entre 0.25 et 24.';
@@ -330,23 +330,20 @@ $nbOperateurs = count($statsParOperateur);
             </nav>
 
             <div style="margin-top:auto;padding-top:1.5rem;border-top:1px solid var(--glass-border);">
-                <p
-                    style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.75rem;">
-                    Connecté</p>
-                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem;">
+                    <div>
+                        <p style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.4rem;">Connecté</p>
+                        <p style="font-weight: 600; font-size: 0.85rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">
+                            <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?>
+                        </p>
+                    </div>
                     <?php if (!empty($_SESSION['avatar'])): ?>
-                        <img src="<?= htmlspecialchars($_SESSION['avatar']) ?>"
-                            style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--glass-border);">
+                        <img src="<?= htmlspecialchars($_SESSION['avatar']) ?>" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid var(--glass-border);">
                     <?php else: ?>
-                        <div
-                            style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;">
+                        <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem;">
                             <?= strtoupper(substr($_SESSION['user_prenom'], 0, 1) . substr($_SESSION['user_nom'], 0, 1)) ?>
                         </div>
                     <?php endif; ?>
-                    <p
-                        style="font-weight: 600; font-size: 0.85rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">
-                        <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?>
-                    </p>
                 </div>
                 <a href="logout.php" class="btn btn-ghost sidebar-link"
                     style="width:100%;margin-top:1rem;color:var(--error);border-color:rgba(244,63,94,0.15);font-size:0.75rem;padding:0.6rem;">
@@ -357,10 +354,10 @@ $nbOperateurs = count($statsParOperateur);
 
         <main class="main-content">
             <?php if ($message): ?>
-                    <div class="alert alert-<?= $messageType ?> animate-in" style="margin-bottom: 1.5rem;">
-                        <span><?= $messageType === 'success' ? '✓' : '⚠' ?></span>
-                        <span><?= htmlspecialchars($message) ?></span>
-                    </div>
+                <div class="alert alert-<?= $messageType ?> animate-in" style="margin-bottom: 1.5rem;">
+                    <span><?= $messageType === 'success' ? '✓' : '⚠' ?></span>
+                    <span><?= htmlspecialchars($message) ?></span>
+                </div>
             <?php endif; ?>
             <!-- Titre -->
             <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;" class="animate-in">
@@ -657,9 +654,8 @@ $nbOperateurs = count($statsParOperateur);
 
                 <div class="form-group">
                     <label class="label">Numéro d'OF</label>
-                    <input type="text" name="numero_of" id="edit_of" class="input" pattern="^4\d{5}$"
-                        title="L'OF doit comporter 6 chiffres et commencer par un 4" required maxlength="6"
-                        inputmode="numeric">
+                    <input type="text" name="numero_of" id="edit_of" class="input" required maxlength="50"
+                        autocapitalize="characters">
                 </div>
 
                 <div class="form-group">
