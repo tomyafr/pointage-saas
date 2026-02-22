@@ -989,6 +989,11 @@ input[type="checkbox"] {
         display: block;
     }
 
+    /* Vider la visibilité de la navbar du bas quand la sidebar latérale est ouverte */
+    body.sidebar-is-open .mobile-bottom-nav {
+        display: none !important;
+    }
+
     /* ── Masquer la sidebar desktop ── */
     .dashboard-layout {
         grid-template-columns: 1fr;
@@ -997,7 +1002,7 @@ input[type="checkbox"] {
     .sidebar {
         position: fixed;
         inset: 0;
-        z-index: 1000;
+        z-index: 1100;
         transform: translateX(-100%);
         transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
         width: min(85vw, 300px);
@@ -1014,7 +1019,7 @@ input[type="checkbox"] {
         position: fixed;
         inset: 0;
         background: rgba(0, 0, 0, 0.65);
-        z-index: 999;
+        z-index: 1090;
         backdrop-filter: blur(4px);
         -webkit-backdrop-filter: blur(4px);
     }
@@ -1091,8 +1096,9 @@ input[type="checkbox"] {
     }
 
     .input-wrapper .input {
-        padding-left: 3.25rem;
-        padding-right: 3.25rem;
+        padding-left: 1rem;
+        padding-right: 3rem;
+        /* Espace pour l'oeil */
     }
 
     /* ── Boutons ── */

@@ -716,6 +716,7 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('sidebarOverlay').classList.toggle('open');
+            document.body.classList.toggle('sidebar-is-open');
         }
     </script>
 

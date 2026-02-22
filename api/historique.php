@@ -524,6 +524,7 @@ $nbOperateurs = count($statsParOperateur);
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('sidebarOverlay').classList.toggle('open');
+            document.body.classList.toggle('sidebar-is-open');
         }
 
         // Fermer sidebar automatiquement au clic sur un lien
@@ -531,6 +532,7 @@ $nbOperateurs = count($statsParOperateur);
             link.addEventListener('click', () => {
                 document.getElementById('sidebar').classList.remove('open');
                 document.getElementById('sidebarOverlay').classList.remove('open');
+                document.body.classList.remove('sidebar-is-open');
             });
         });
 

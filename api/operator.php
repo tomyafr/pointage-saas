@@ -404,6 +404,7 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('sidebarOverlay').classList.toggle('open');
+            document.body.classList.toggle('sidebar-is-open');
         }
 
         // Fermer sidebar dès qu'on clique sur un lien ou bouton de nav

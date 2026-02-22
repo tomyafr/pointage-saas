@@ -334,6 +334,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         function toggleSidebar() {
             document.getElementById('sidebar').classList.toggle('open');
             document.getElementById('sidebarOverlay').classList.toggle('open');
+            document.body.classList.toggle('sidebar-is-open');
+            // Fermer sidebar automatiquement si clic lien
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    document.getElementById('sidebar').classList.remove('open');
+                    document.getElementById('sidebarOverlay').classList.remove('open');
+                    document.body.classList.remove('sidebar-is-open');
+                });
+            });
         }
         function togglePass(btn) {
             const input = btn.parentElement.querySelector('input');
