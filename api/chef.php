@@ -459,11 +459,6 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
                     style="width: 100%; margin-top: 0.5rem; font-size: 0.75rem; padding: 0.6rem; text-decoration: none; color: inherit; border: 1px solid var(--glass-border);">
                     👤 Mon Profil
                 </a>
-                <button onclick="if(window.notificationManager) window.notificationManager.requestPermission()"
-                    class="btn btn-ghost"
-                    style="width: 100%; margin-top: 0.5rem; font-size: 0.65rem; border: none; opacity: 0.5;">
-                    🔔 Activer Notifications
-                </button>
             </div>
         </aside>
 

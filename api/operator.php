@@ -281,9 +281,6 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                 <a href="logout.php" class="btn btn-ghost" style="width: 100%; margin-top: 1rem; color: var(--error); border-color: rgba(244, 63, 94, 0.15); font-size: 0.75rem; padding: 0.6rem;">
                     Se déconnecter
                 </a>
-                <button onclick="if(window.notificationManager) window.notificationManager.requestPermission()" class="btn btn-ghost" style="width: 100%; margin-top: 0.5rem; font-size: 0.65rem; border: none; opacity: 0.5;">
-                    🔔 Activer Notifications
-                </button>
             </div>
         </aside>
 
