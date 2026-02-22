@@ -330,20 +330,23 @@ $nbOperateurs = count($statsParOperateur);
             </nav>
 
             <div style="margin-top:auto;padding-top:1.5rem;border-top:1px solid var(--glass-border);">
-                <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1rem;">
-                    <div>
-                        <p style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.4rem;">Connecté</p>
-                        <p style="font-weight: 600; font-size: 0.85rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">
-                            <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?>
-                        </p>
-                    </div>
+                <p
+                    style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.75rem;">
+                    Connecté</p>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <?php if (!empty($_SESSION['avatar'])): ?>
-                        <img src="<?= htmlspecialchars($_SESSION['avatar']) ?>" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid var(--glass-border);">
+                        <img src="<?= htmlspecialchars($_SESSION['avatar']) ?>"
+                            style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--glass-border);">
                     <?php else: ?>
-                        <div style="width: 38px; height: 38px; border-radius: 50%; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.85rem;">
+                        <div
+                            style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;">
                             <?= strtoupper(substr($_SESSION['user_prenom'], 0, 1) . substr($_SESSION['user_nom'], 0, 1)) ?>
                         </div>
                     <?php endif; ?>
+                    <p
+                        style="font-weight: 600; font-size: 0.85rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">
+                        <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?>
+                    </p>
                 </div>
                 <a href="logout.php" class="btn btn-ghost sidebar-link"
                     style="width:100%;margin-top:1rem;color:var(--error);border-color:rgba(244,63,94,0.15);font-size:0.75rem;padding:0.6rem;">
