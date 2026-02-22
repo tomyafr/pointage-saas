@@ -100,12 +100,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $session = $stmt->fetch();
             
             if ($session) {
-                // Calculer les heures écoulées (simplifié au quart d'heure près)
+                // Calculer les heures écoulées de manière PRECISE et EXACTE
                 $start = strtotime($session['start_time']);
                 $end = time();
                 $diffHours = ($end - $start) / 3600;
-                // Arrondi au quart d'heure supérieur ou le plus proche, minimum 0.25h
-                $heures = max(0.25, round($diffHours * 4) / 4);
+                // Enregistrement au temps exact (ex: 1h43 = 1.72h), minimum de 0.25h (15min) pour validation
+                $heures = max(0.25, round($diffHours, 2));
                 $numeroOf = $session['numero_of'];
                 $datePointage = date('Y-m-d', $start); // Garder la date de début
 
@@ -320,15 +320,13 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                             </div>
                             
                             <script>
-                                // Timer en direct JavaScript
-                                const startTime = new Date("<?= date('Y-m-d\TH:i:s', strtotime($activeSession['start_time'])) ?>").getTime();
+                                // Timer en direct JavaScript (Synchronisé avec le vrai temps Serveur pour éviter les décalages de fuseau)
+                                let diffSeconds = <?= max(0, time() - strtotime($activeSession['start_time'])) ?>;
                                 setInterval(() => {
-                                    const now = new Date().getTime();
-                                    const diff = Math.floor((now - startTime) / 1000);
-                                    if (diff < 0) return;
-                                    const h = String(Math.floor(diff / 3600)).padStart(2, '0');
-                                    const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
-                                    const s = String(diff % 60).padStart(2, '0');
+                                    diffSeconds++;
+                                    const h = String(Math.floor(diffSeconds / 3600)).padStart(2, '0');
+                                    const m = String(Math.floor((diffSeconds % 3600) / 60)).padStart(2, '0');
+                                    const s = String(diffSeconds % 60).padStart(2, '0');
                                     document.getElementById('liveTimer').textContent = `${h}:${m}:${s}`;
                                 }, 1000);
                             </script>
