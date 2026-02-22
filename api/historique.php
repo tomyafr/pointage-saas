@@ -24,7 +24,9 @@ switch ($filterPeriod) {
     case 'month':
         $dateDebut = date('Y-m-01');
         $dateFin = date('Y-m-d');
-        $labelPeriod = 'Ce mois (' . strftime('%B %Y') . ')';
+        // Utiliser date() au lieu de strftime() (supprimé en PHP 8.2)
+        $moisNoms = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+        $labelPeriod = 'Ce mois (' . $moisNoms[(int) date('n')] . ' ' . date('Y') . ')';
         break;
     case 'all':
         $dateDebut = '2020-01-01';
@@ -389,7 +391,8 @@ $nbOperateurs = count($statsParOperateur);
             <div class="card glass animate-in-delay-1" style="padding:1.5rem;margin-bottom:1.5rem;">
                 <form method="GET" class="filter-bar" id="filterForm">
                     <select name="period" onchange="this.form.submit()">
-                        <option value="current" <?= $filterPeriod === 'current' ? 'selected' : '' ?>>Semaine en cours</option>
+                        <option value="current" <?= $filterPeriod === 'current' ? 'selected' : '' ?>>Semaine en cours
+                        </option>
                         <option value="last" <?= $filterPeriod === 'last' ? 'selected' : '' ?>>Semaine
                             pr&eacute;c&eacute;dente</option>
                         <option value="month" <?= $filterPeriod === 'month' ? 'selected' : '' ?>>Ce mois</option>
