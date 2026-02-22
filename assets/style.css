@@ -616,24 +616,56 @@ h4 {
     line-height: 1;
 }
 
-/* ═══════════ Mobile menu toggle (legacy, masqué sur mobile app) ═══════════ */
-.mobile-menu-toggle {
+/* ═══════════ Bouton logo mobile (remplace hamburger) ═══════════ */
+.mobile-logo-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    height: 100%;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    flex-shrink: 0;
+}
+
+.mobile-logo-btn:active {
+    opacity: 0.75;
+}
+
+/* ═══════════ Bouton fermer sidebar (X rouge) ═══════════ */
+.sidebar-close-btn {
     display: none;
-    position: fixed;
+    /* masqué sur desktop */
+    position: absolute;
     top: 1rem;
-    left: 1rem;
-    z-index: 1001;
-    width: 44px;
-    height: 44px;
-    background: var(--bg-glass);
-    backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-sm);
+    right: 1rem;
+    width: 36px;
+    height: 36px;
+    background: rgba(244, 63, 94, 0.12);
+    border: 1px solid rgba(244, 63, 94, 0.3);
+    border-radius: 50%;
+    color: var(--error);
+    font-size: 1.4rem;
+    line-height: 1;
     cursor: pointer;
     align-items: center;
     justify-content: center;
-    font-size: 1.3rem;
-    color: var(--primary);
+    z-index: 10;
+    transition: var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.sidebar-close-btn:hover,
+.sidebar-close-btn:active {
+    background: rgba(244, 63, 94, 0.25);
+    transform: scale(1.1);
+}
+
+/* ═══════════ Mobile menu toggle — désactivé (logo prend le relais) ═══════════ */
+.mobile-menu-toggle {
+    display: none !important;
 }
 
 /* ═══════════ STATS ═══════════ */
@@ -984,8 +1016,8 @@ input[type="checkbox"] {
         display: block;
     }
 
-    /* Hamburger visible sur mobile */
-    .mobile-menu-toggle {
+    /* Afficher le bouton fermeture sidebar */
+    .sidebar-close-btn {
         display: flex;
     }
 
