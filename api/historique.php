@@ -39,6 +39,44 @@ switch ($filterPeriod) {
         $labelPeriod = 'Semaine en cours';
 }
 
+$message = '';
+$messageType = '';
+
+// ── Traitement des Actions Administratives (Modifier OF) ───────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    verifyCsrfToken();
+    if ($_POST['action'] === 'edit_pointage') {
+        $pId = intval($_POST['pointage_id'] ?? 0);
+        $nouvelOf = strtoupper(trim($_POST['numero_of'] ?? ''));
+        $nouvellesHeures = floatval($_POST['heures'] ?? 0);
+        $nouvelleDate = $_POST['date_pointage'] ?? '';
+
+        if ($pId > 0) {
+            if (empty($nouvelOf) || !preg_match('/^4\d{5}$/', $nouvelOf)) {
+                $message = 'Numéro d\'OF invalide (doit contenir exactement 6 chiffres et commencer par 4).';
+                $messageType = 'error';
+            } elseif ($nouvellesHeures <= 0 || $nouvellesHeures > 24) {
+                $message = 'Le nombre d\'heures doit être entre 0.25 et 24.';
+                $messageType = 'error';
+            } elseif (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $nouvelleDate)) {
+                $message = 'Format de date invalide.';
+                $messageType = 'error';
+            } else {
+                try {
+                    $stmt = $db->prepare('UPDATE pointages SET numero_of = ?, heures = ?, date_pointage = ?, updated_at = NOW() WHERE id = ?');
+                    $stmt->execute([$nouvelOf, $nouvellesHeures, $nouvelleDate, $pId]);
+                    logAudit('POINTAGE_EDITED_BY_ADMIN', "Pointage ID: $pId, Nouvel OF: $nouvelOf, Nouvelles Heures: $nouvellesHeures");
+                    $message = 'Pointage modifié avec succès.';
+                    $messageType = 'success';
+                } catch (PDOException $e) {
+                    $message = 'Erreur lors de la modification.';
+                    $messageType = 'error';
+                }
+            }
+        }
+    }
+}
+
 // ── Récupérer tous les utilisateurs actifs ────────────────────────────────
 $stmtUsers = $db->prepare('SELECT id, nom, prenom FROM users WHERE actif = TRUE ORDER BY nom');
 $stmtUsers->execute();
@@ -318,7 +356,12 @@ $nbOperateurs = count($statsParOperateur);
         </aside>
 
         <main class="main-content">
-            <!-- Titre -->
+            <?php if ($message): ?>
+                    <div class="alert alert-<?= $messageType ?> animate-in" style="margin-bottom: 1.5rem;">
+                        <span><?= $messageType === 'success' ? '✓' : '⚠' ?></span>
+                        <span><?= htmlspecialchars($message) ?></span>
+                    </div>
+            <?php endif; ?>
             <!-- Titre -->
             <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;" class="animate-in">
                 <h1
@@ -466,6 +509,7 @@ $nbOperateurs = count($statsParOperateur);
                                     <th style="text-align:right;">Heures</th>
                                     <th style="text-align:center;">Sync BC</th>
                                     <th class="col-created">Enregistr&eacute;</th>
+                                    <th style="text-align:center;">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -507,6 +551,19 @@ $nbOperateurs = count($statsParOperateur);
                                             style="font-size:0.72rem;color:var(--text-dim);font-family:var(--font-mono);">
                                             <?= date('d/m H\hi', strtotime($p['created_at'])) ?>
                                         </td>
+                                        <td style="text-align:center;">
+                                            <button type="button" class="btn btn-ghost"
+                                                style="padding: 0.35rem 0.6rem; font-size: 0.85rem;"
+                                                title="Modifier ce pointage" onclick='openEditModal(<?= json_encode([
+                                                    "id" => $p["id"],
+                                                    "of" => $p["numero_of"],
+                                                    "heures" => $p["heures"],
+                                                    "date" => $p["date_pointage"],
+                                                    "nom" => $p["prenom"] . " " . $p["nom"]
+                                                ]) ?>)'>
+                                                ✏️
+                                            </button>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -517,7 +574,7 @@ $nbOperateurs = count($statsParOperateur);
                                         style="padding:1rem;text-align:right;font-weight:900;font-size:1.1rem;color:var(--primary);font-family:var(--font-mono);">
                                         <?= number_format($grandTotal, 2) ?>h
                                     </td>
-                                    <td colspan="2"></td>
+                                    <td colspan="3"></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -569,7 +626,61 @@ $nbOperateurs = count($statsParOperateur);
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => document.getElementById('filterForm').submit(), 700);
         }
+
+        function openEditModal(pointage) {
+            document.getElementById('edit_pointage_id').value = pointage.id;
+            document.getElementById('edit_of').value = pointage.of;
+            document.getElementById('edit_heures').value = pointage.heures;
+            document.getElementById('edit_date').value = pointage.date;
+            document.getElementById('editModalTitle').textContent = "Modifier pointage - " + pointage.nom;
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
     </script>
+
+    <!-- Modal Modification Pointage -->
+    <div id="editModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; background:rgba(0,0,0,0.8); align-items:center; justify-content:center; backdrop-filter:blur(5px);">
+        <div class="card glass animate-in"
+            style="width: 100%; max-width: 400px; padding: 2rem; position: relative; border-color: rgba(255,179,0,0.3);">
+            <button onclick="closeEditModal()"
+                style="position:absolute; top:1rem; right:1.5rem; background:none; border:none; color:var(--text-dim); font-size:1.5rem; cursor:pointer;">&times;</button>
+            <h3 id="editModalTitle" style="margin-bottom: 1.5rem; font-size: 1.1rem; color: var(--primary);">Modifier le
+                pointage</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="edit_pointage">
+                <?= csrfField() ?>
+                <input type="hidden" name="pointage_id" id="edit_pointage_id">
+
+                <div class="form-group">
+                    <label class="label">Numéro d'OF</label>
+                    <input type="text" name="numero_of" id="edit_of" class="input" pattern="^4\d{5}$"
+                        title="L'OF doit comporter 6 chiffres et commencer par un 4" required maxlength="6"
+                        inputmode="numeric">
+                </div>
+
+                <div class="form-group">
+                    <label class="label">Date du pointage</label>
+                    <input type="date" name="date_pointage" id="edit_date" class="input" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="label">Heures pointées</label>
+                    <input type="number" name="heures" id="edit_heures" class="input" step="0.25" min="0.25" max="24"
+                        required>
+                </div>
+
+                <div style="display:flex; gap:1rem; margin-top:2rem;">
+                    <button type="button" class="btn btn-ghost" style="flex:1;"
+                        onclick="closeEditModal()">Annuler</button>
+                    <button type="submit" class="btn btn-primary" style="flex:1;">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
 
 </html>

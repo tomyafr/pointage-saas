@@ -23,12 +23,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $heures = floatval($_POST['heures'] ?? 0);
         $datePointage = $_POST['date_pointage'] ?? $today;
 
-        // Validation du numéro OF
-        if (empty($numeroOf)) {
-            $message = 'Le numéro d\'OF est obligatoire.';
-            $messageType = 'error';
-        } elseif (strlen($numeroOf) > 50) {
-            $message = 'Le numéro d\'OF est trop long (max 50 caractères).';
+        // Validation stricte du numéro OF : 6 chiffres commençant par 4
+        if (empty($numeroOf) || !preg_match('/^4\d{5}$/', $numeroOf)) {
+            $message = 'Numéro d\'OF invalide (doit contenir exactement 6 chiffres et commencer par 4).';
             $messageType = 'error';
         } elseif ($heures <= 0 || $heures > 24) {
             $message = 'Le nombre d\'heures doit être entre 0.25 et 24.';
@@ -70,8 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
     } elseif ($_POST['action'] === 'start_production') {
         $numeroOf = strtoupper(trim($_POST['numero_of'] ?? ''));
-        if (empty($numeroOf) || strlen($numeroOf) > 50) {
-            $message = 'Numéro OF invalide.';
+        if (empty($numeroOf) || !preg_match('/^4\d{5}$/', $numeroOf)) {
+            $message = 'Numéro d\'OF invalide (doit contenir exactement 6 chiffres et commencer par 4).';
             $messageType = 'error';
         } else {
             try {
@@ -356,8 +353,8 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                                     <span style="font-size: 1.4rem;">▶️</span> Démarrer un Chrono Live
                                 </h3>
                                 <div class="form-group" style="margin-bottom: 1rem;">
-                                    <input type="text" name="numero_of" class="input" placeholder="Numéro de l'OF (ex: OF-2024-123)"
-                                        autocapitalize="characters" list="of-list" required maxlength="50" autocomplete="off">
+                                    <input type="text" name="numero_of" class="input" placeholder="Ex: 412345"
+                                        pattern="^4\d{5}$" list="of-list" required maxlength="6" inputmode="numeric" autocomplete="off" title="L'OF doit être composé de 6 chiffres et commencer par 4">
                                 </div>
                                 <button type="submit" class="btn" style="width: 100%; background: var(--primary); color: #000; border: none; font-weight: bold;">
                                     Démarrer la Production
@@ -381,9 +378,9 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                                 <div class="form-group">
                                     <label class="label">Ordre de Fabrication</label>
                                     <input type="text" name="numero_of" class="input" id="ofInput"
-                                        placeholder="Numéro OF..." autocapitalize="characters"
-                                        list="of-list" required maxlength="50"
-                                        inputmode="text" autocomplete="off">
+                                        placeholder="Ex: 412345" pattern="^4\d{5}$" title="L'OF doit être composé de 6 chiffres et commencer par 4"
+                                        list="of-list" required maxlength="6"
+                                        inputmode="numeric" autocomplete="off">
                                     <datalist id="of-list">
                                         <?php foreach ($ofsUtilises as $of): ?>
                                             <option value="<?= htmlspecialchars($of) ?>">
