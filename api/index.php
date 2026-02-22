@@ -39,6 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verifyCsrfToken();
 
     $db = getDB();
+    try {
+        $db->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_base64 TEXT");
+    } catch (Exception $e) {
+    }
     $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'];
     // Ne garder que la première IP si plusieurs (proxy)
     $ip = trim(explode(',', $ip)[0]);
