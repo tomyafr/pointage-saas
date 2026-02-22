@@ -938,7 +938,7 @@ input[type="checkbox"] {
         display: flex;
     }
 
-    /* ── Bottom Nav mobile ── */
+    /* Bottom Nav mobile */
     .mobile-bottom-nav {
         display: block;
     }
@@ -977,14 +977,43 @@ input[type="checkbox"] {
         display: block;
     }
 
+    /* ── Hamburger : fix overlap avec le logo ──
+       Le bouton est fixed top-left mais le header
+       a maintenant padding-left pour ne pas se chevaucher */
     .mobile-menu-toggle {
         display: flex;
+        /* Aligné exactement avec le header */
+        top: 0;
+        height: var(--mobile-header-height);
+        border-radius: 0;
+        background: transparent;
+        border: none;
+        border-right: 1px solid var(--glass-border);
+        /* Légèrement plus large pour être confortable */
+        width: 50px;
+    }
+
+    /* Le logo dans le header est masqué sur mobile
+       (le hamburger prend sa place visuellement) */
+    .mobile-header-logo {
+        display: none;
+    }
+
+    /* Le header laisse de la place au hamburger à gauche */
+    .mobile-header {
+        padding-left: 54px;
+        gap: 0.5rem;
+    }
+
+    /* Titre du header plus visible */
+    .mobile-header-title {
+        font-size: 1rem;
+        flex: 1;
     }
 
     /* ── Main content ── */
     .main-content {
         padding: 1rem;
-        /* Espace pour le header fixe + bottom nav */
         padding-top: calc(var(--mobile-header-height) + 0.75rem);
         padding-bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom) + 0.75rem);
         min-height: 100dvh;
@@ -1062,6 +1091,7 @@ input[type="checkbox"] {
         grid-template-columns: 1fr !important;
     }
 
+    /* ── Formulaire de saisie : 1 colonne ── */
     .saisie-grid {
         grid-template-columns: 1fr !important;
         gap: 1.25rem !important;
@@ -1069,6 +1099,11 @@ input[type="checkbox"] {
 
     /* ── Grille 2 colonnes profile → 1 colonne ── */
     .profile-grid-2 {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* ── Grille 2 cols mot de passe → 1 colonne (FIX screenshot) ── */
+    #passwordForm>div[style*="grid-template-columns: 1fr 1fr"] {
         grid-template-columns: 1fr !important;
     }
 

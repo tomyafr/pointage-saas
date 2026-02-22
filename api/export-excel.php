@@ -95,6 +95,137 @@ $totalGlobal = array_sum(array_column($resume, 'total_heures'));
 
 $filename = 'pointage_semaine_' . $dateDebut . '.xls';
 
+// ── Mode page de téléchargement (sans ?serve=1) ──────────────────────────────
+// Sur mobile iOS, ouvrir directement le fichier sur cette page bloque la navigation.
+// On affiche donc d'abord une page avec bouton "Télécharger" + bouton "Retour".
+if (!isset($_GET['serve'])) {
+    $nbLignes = count($pointages);
+    $totalHeures = $totalGlobal ?? 0;
+    $serveUrl = '?serve=1&week=' . urlencode($filterWeek) . '&of=' . urlencode($filterOf);
+    ?>
+    <!DOCTYPE html>
+    <html lang="fr">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+        <title>Export Excel | Raoul Lenoir</title>
+        <link rel="stylesheet" href="/assets/style.css">
+        <meta name="theme-color" content="#020617">
+        <style>
+            body {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-height: 100dvh;
+                padding: 1.5rem;
+            }
+
+            .export-card {
+                background: var(--glass-bg);
+                border: 1px solid var(--glass-border);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border-radius: var(--radius-xl);
+                padding: 2.5rem 2rem;
+                max-width: 420px;
+                width: 100%;
+                text-align: center;
+                box-shadow: var(--shadow-lg);
+            }
+
+            .export-icon {
+                font-size: 3.5rem;
+                margin-bottom: 1.25rem;
+                display: block;
+            }
+
+            .export-title {
+                font-size: 1.4rem;
+                font-weight: 800;
+                margin-bottom: 0.4rem;
+            }
+
+            .export-meta {
+                font-size: 0.82rem;
+                color: var(--text-dim);
+                margin-bottom: 2rem;
+            }
+
+            .export-stats {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+                margin-bottom: 2rem;
+            }
+
+            .export-stat {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid var(--glass-border);
+                border-radius: var(--radius-md);
+                padding: 0.85rem;
+            }
+
+            .export-stat strong {
+                display: block;
+                font-size: 1.5rem;
+                font-weight: 900;
+                color: var(--primary);
+            }
+
+            .export-stat span {
+                font-size: 0.65rem;
+                color: var(--text-dim);
+                text-transform: uppercase;
+                letter-spacing: .05em;
+            }
+
+            .btn-group {
+                display: flex;
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="export-card">
+            <span class="export-icon">&#128229;</span>
+            <div class="export-title">Export Excel</div>
+            <div class="export-meta">
+                Semaine du <?= date('d/m', strtotime($dateDebut)) ?> au <?= date('d/m/Y', strtotime($dateFin)) ?>
+                <?php if ($filterOf): ?>&nbsp;&middot;&nbsp;OF : <?= htmlspecialchars($filterOf) ?><?php endif; ?>
+            </div>
+
+            <div class="export-stats">
+                <div class="export-stat">
+                    <strong><?= $nbLignes ?></strong>
+                    <span>Pointages</span>
+                </div>
+                <div class="export-stat">
+                    <strong><?= number_format((float) $totalHeures, 1) ?>h</strong>
+                    <span>Total heures</span>
+                </div>
+            </div>
+
+            <div class="btn-group">
+                <a href="<?= htmlspecialchars($serveUrl) ?>" class="btn btn-primary"
+                    download="<?= htmlspecialchars($filename) ?>">
+                    &#128229;&nbsp; Télécharger le fichier
+                </a>
+                <a href="chef.php" class="btn btn-ghost">
+                    &#8592;&nbsp; Retour au tableau de bord
+                </a>
+            </div>
+        </div>
+    </body>
+
+    </html>
+    <?php
+    exit;
+}
+
+// ── Servir le fichier Excel ────────────────────────────────────────────────
 header('Content-Type: application/vnd.ms-excel');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
 header('Cache-Control: max-age=0');

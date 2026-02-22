@@ -367,7 +367,7 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
                 </a>
                 <a href="historique.php" class="btn btn-ghost sidebar-link"
                     style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;">
-                    <span>&#128337;</span> Historique G&eacute;n&eacute;ral
+                    <span>&#128337;</span> Historique
                 </a>
                 <a href="export-excel.php?week=<?= $filterWeek ?>&amp;of=<?= urlencode($filterOf) ?>"
                     class="btn btn-ghost sidebar-link"
@@ -848,12 +848,11 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
                 <span class="mobile-nav-icon">&#128202;</span>
                 <span class="mobile-nav-label">Tableau</span>
             </a>
-            <a href="operator.php" class="mobile-nav-item">
-                <span class="mobile-nav-icon">&#9203;</span>
-                <span class="mobile-nav-label">Saisie</span>
+            <a href="historique.php" class="mobile-nav-item">
+                <span class="mobile-nav-icon">&#128337;</span>
+                <span class="mobile-nav-label">Historique</span>
             </a>
-            <a href="export-excel.php?week=<?= $filterWeek ?>&of=<?= urlencode($filterOf) ?>" class="mobile-nav-item"
-                target="_blank">
+            <a href="export-excel.php?week=<?= $filterWeek ?>&of=<?= urlencode($filterOf) ?>" class="mobile-nav-item">
                 <span class="mobile-nav-icon">&#128196;</span>
                 <span class="mobile-nav-label">Export</span>
             </a>
