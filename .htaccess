@@ -1,0 +1,84 @@
+# ============================================
+# .htaccess — Sécurité Pointage Atelier SaaS
+# ============================================
+
+# Pas d'affichage de la liste des répertoires
+Options -Indexes
+
+# Masquer la signature du serveur Apache
+ServerSignature Off
+
+# Protéger les fichiers sensibles
+<FilesMatch "\.(sql|md|log|bak|env|json|lock)$">
+    Require all denied
+</FilesMatch>
+
+# Protéger explicitement le fichier de config
+<Files "config.php">
+    Require all denied
+</Files>
+
+# Protéger le dossier includes
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^includes/ - [F,L]
+</IfModule>
+
+# ============================================
+# HEADERS DE SÉCURITÉ HTTP
+# ============================================
+<IfModule mod_headers.c>
+    # Empêcher l'affichage dans une iframe (clickjacking)
+    Header always set X-Frame-Options "DENY"
+
+    # Empêcher le MIME-sniffing
+    Header always set X-Content-Type-Options "nosniff"
+
+    # Protection XSS legacy
+    Header always set X-XSS-Protection "1; mode=block"
+
+    # Politique de référent
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+    # Politique de permissions
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+
+    # Masquer la version PHP (doublon avec config.php, pour couvrir les cas sans PHP)
+    Header always unset X-Powered-By
+    Header always unset Server
+
+    # Content Security Policy : autoriser uniquement les ressources du même domaine
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; media-src 'self'; connect-src 'self';"
+
+    # Cache désactivé pour les pages authentifiées
+    <FilesMatch "\.(php)$">
+        Header always set Cache-Control "no-store, no-cache, must-revalidate, private"
+        Header always set Pragma "no-cache"
+    </FilesMatch>
+</IfModule>
+
+# ============================================
+# FORCER HTTPS
+# ============================================
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{HTTPS} !=on
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+# ============================================
+# COMPRESSION GZIP
+# ============================================
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css application/json application/javascript text/xml
+</IfModule>
+
+# ============================================
+# PROTECTION CSRF SUPPLÉMENTAIRE (API)
+# ============================================
+# Bloquer les requêtes Cross-Origin vers les fichiers PHP
+<FilesMatch "\.php$">
+    <IfModule mod_setenvif.c>
+        SetEnvIfNoCase Origin "^https?://([^.]+\.)?raoul-lenoir\." VALID_ORIGIN
+    </IfModule>
+</FilesMatch>

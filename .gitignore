@@ -1,8 +1,20 @@
+# Variables d'environnement (jamais commit)
 .env
+.env.local
+.env.production
+
+# Logs
 *.log
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Dépendances Node (si applicable)
 node_modules/
+
+# Artefacts Vercel CLI local
 .vercel/
-.htaccess
-db.sql
-README.md
+
+# Fichiers sensibles locaux
+back/
