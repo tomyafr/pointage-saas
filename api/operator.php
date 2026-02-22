@@ -102,7 +102,7 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Espace Opérateur | Raoul Lenoir</title>
     <link rel="stylesheet" href="/assets/style.css">
     <link rel="manifest" href="/manifest.json">
@@ -120,25 +120,34 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
             display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem;
         }
         .quick-hour button {
-            flex: 1; min-width: 50px; padding: 0.6rem 0; border-radius: var(--radius-sm);
+            flex: 1; min-width: 50px; padding: 0.85rem 0; border-radius: var(--radius-sm);
             background: rgba(255,255,255,0.04); border: 1px solid var(--glass-border);
             color: var(--text-muted); font-family: var(--font-mono); font-size: 0.85rem;
             font-weight: 700; cursor: pointer; transition: var(--transition-fast);
+            min-height: 48px; touch-action: manipulation; -webkit-tap-highlight-color: transparent;
         }
-        .quick-hour button:hover {
+        .quick-hour button:hover, .quick-hour button:active {
             background: var(--primary-subtle); border-color: var(--primary); color: var(--primary);
         }
     </style>
 </head>
 <body>
-    <!-- Vidéo Background Ambiance (Fumée) -->
+    <!-- Vido Background Ambiance (Fume) -->
     <div class="video-smoke-background">
         <video autoplay muted loop playsinline id="bgVideoSmoke">
             <source src="/assets/video-fumee-blanche-faible.mp4" type="video/mp4">
         </video>
     </div>
 
-    <!-- Mobile menu toggle -->
+    <!-- ═══ HEADER MOBILE (visible uniquement sur smartphone) ═══ -->
+    <header class="mobile-header">
+        <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir" class="mobile-header-logo"
+             style="filter: brightness(0) saturate(100%) invert(73%) sepia(86%) saturate(1063%) hue-rotate(358deg) brightness(101%) contrast(106%);">
+        <span class="mobile-header-title">Mon Pointage</span>
+        <span class="mobile-header-user"><?= htmlspecialchars($_SESSION['user_prenom']) ?></span>
+    </header>
+
+    <!-- Mobile sidebar toggle (visible uniquement depuis sidebar) -->
     <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
@@ -213,13 +222,13 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
 
             <!-- Tab Saisie -->
             <div id="tab-saisie" class="animate-in">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;" class="saisie-grid">
                     <section>
                         <form method="POST" class="card glass">
                             <input type="hidden" name="action" value="saisir">
                             <?= csrfField() ?>
                             <h3 style="margin-bottom: 2rem; display: flex; align-items: center; gap: 0.75rem;">
-                                <span style="font-size: 1.4rem;">⏱</span> Nouveau Pointage
+                                <span style="font-size: 1.4rem;">&#9203;</span> Nouveau Pointage
                             </h3>
 
                             <div class="form-group">
@@ -232,7 +241,8 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                                 <label class="label">Ordre de Fabrication</label>
                                 <input type="text" name="numero_of" class="input" id="ofInput"
                                     placeholder="Ex: OF-2025-001" autocapitalize="characters"
-                                    list="of-list" required maxlength="50">
+                                    list="of-list" required maxlength="50"
+                                    inputmode="text" autocomplete="off">
                                 <datalist id="of-list">
                                     <?php foreach ($ofsUtilises as $of): ?>
                                         <option value="<?= htmlspecialchars($of) ?>">
@@ -244,19 +254,20 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                                 <label class="label">Heures travaillées</label>
                                 <input type="number" name="heures" id="heuresInput" class="input"
                                     style="font-size: 2.2rem; font-weight: 900; text-align: center; color: var(--primary); height: 5rem;"
-                                    placeholder="0.0" step="0.25" min="0.25" max="24" required>
+                                    placeholder="0.0" step="0.25" min="0.25" max="24" required
+                                    inputmode="decimal">
                                 <div class="quick-hour">
-                                    <button type="button" onclick="setHeures(0.5)">0.5</button>
-                                    <button type="button" onclick="setHeures(1)">1</button>
-                                    <button type="button" onclick="setHeures(2)">2</button>
-                                    <button type="button" onclick="setHeures(4)">4</button>
-                                    <button type="button" onclick="setHeures(7)">7</button>
-                                    <button type="button" onclick="setHeures(8)">8</button>
+                                    <button type="button" onclick="setHeures(0.5)">0.5h</button>
+                                    <button type="button" onclick="setHeures(1)">1h</button>
+                                    <button type="button" onclick="setHeures(2)">2h</button>
+                                    <button type="button" onclick="setHeures(4)">4h</button>
+                                    <button type="button" onclick="setHeures(7)">7h</button>
+                                    <button type="button" onclick="setHeures(8)">8h</button>
                                 </div>
                             </div>
 
                             <button type="submit" class="btn btn-primary" style="width: 100%; height: 3.5rem; font-size: 0.95rem;">
-                                Enregistrer le Pointage →
+                                Enregistrer le Pointage &#8594;
                             </button>
                         </form>
                     </section>
@@ -371,13 +382,21 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
         function switchTab(name) {
             document.getElementById('tab-saisie').style.display = name === 'saisie' ? 'block' : 'none';
             document.getElementById('tab-semaine').style.display = name === 'semaine' ? 'block' : 'none';
-            
             document.getElementById('nav-saisie').className = name === 'saisie' ? 'btn btn-primary' : 'btn btn-ghost';
             document.getElementById('nav-semaine').className = name === 'semaine' ? 'btn btn-primary' : 'btn btn-ghost';
+            // Scroll en haut sur mobile lors du changement d'onglet
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function setActiveNav(el) {
+            document.querySelectorAll('.mobile-nav-item').forEach(i => i.classList.remove('active'));
+            el.classList.add('active');
         }
 
         function setHeures(val) {
             document.getElementById('heuresInput').value = val;
+            // Feedback haptique sur mobile (si supporté)
+            if (navigator.vibrate) navigator.vibrate(30);
         }
 
         function toggleSidebar() {
@@ -389,6 +408,26 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
         const ofInput = document.getElementById('ofInput');
         if (ofInput) ofInput.addEventListener('input', function() { this.value = this.value.toUpperCase(); });
     </script>
-    <script src="/assets/notifications.js"></script>
+    <!-- ═══ BOTTOM NAVIGATION MOBILE ═══ -->
+    <nav class="mobile-bottom-nav">
+        <div class="mobile-bottom-nav-inner">
+            <button class="mobile-nav-item active" onclick="switchTab('saisie'); setActiveNav(this)" id="nav-mob-saisie">
+                <span class="mobile-nav-icon">&#9203;</span>
+                <span class="mobile-nav-label">Saisie</span>
+            </button>
+            <button class="mobile-nav-item" onclick="switchTab('semaine'); setActiveNav(this)" id="nav-mob-semaine">
+                <span class="mobile-nav-icon">&#128197;</span>
+                <span class="mobile-nav-label">Semaine</span>
+            </button>
+            <a href="profile.php" class="mobile-nav-item">
+                <span class="mobile-nav-icon">&#128100;</span>
+                <span class="mobile-nav-label">Profil</span>
+            </a>
+            <a href="logout.php" class="mobile-nav-item" style="color: var(--error);">
+                <span class="mobile-nav-icon">&#x23FB;</span>
+                <span class="mobile-nav-label">Quitter</span>
+            </a>
+        </div>
+    </nav>
 </body>
 </html>

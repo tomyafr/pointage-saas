@@ -230,7 +230,7 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Espace Chef d'Atelier | Raoul Lenoir</title>
     <link rel="stylesheet" href="/assets/style.css">
     <link rel="manifest" href="/manifest.json">
@@ -314,8 +314,16 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
         </video>
     </div>
 
+    <!-- ═══ HEADER MOBILE (visible uniquement sur smartphone) ═══ -->
+    <header class="mobile-header">
+        <img src="/assets/logo-raoul-lenoir.svg" alt="Raoul Lenoir" class="mobile-header-logo"
+             style="filter: brightness(0) saturate(100%) invert(73%) sepia(86%) saturate(1063%) hue-rotate(358deg) brightness(101%) contrast(106%);">
+        <span class="mobile-header-title">Chef d'Atelier</span>
+        <span class="mobile-header-user"><?= htmlspecialchars($_SESSION['user_prenom']) ?></span>
+    </header>
+
     <!-- Mobile menu toggle -->
-    <button class="mobile-menu-toggle" onclick="toggleSidebar()">☰</button>
+    <button class="mobile-menu-toggle" onclick="toggleSidebar()">&#9776;</button>
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
     <div class="dashboard-layout">
@@ -446,8 +454,8 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
                     <input type="hidden" name="action" value="sync_bc">
                     <?= csrfField() ?>
 
-                    <div style="overflow-x: auto;">
-                        <table class="chef-table" style="width: 100%; border-collapse: collapse;">
+                    <div style="overflow-x: auto;" class="table-scroll-wrapper">
+                        <table class="chef-table" style="width: 100%; border-collapse: collapse; min-width: 480px;">
                             <thead>
                                 <tr>
                                     <th style="width: 36px; text-align: center;">
@@ -651,6 +659,33 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
         }
     </script>
     <script src="/assets/notifications.js"></script>
+
+    <!-- ═══ BOTTOM NAVIGATION MOBILE ═══ -->
+    <nav class="mobile-bottom-nav">
+        <div class="mobile-bottom-nav-inner">
+            <a href="chef.php" class="mobile-nav-item active">
+                <span class="mobile-nav-icon">&#128202;</span>
+                <span class="mobile-nav-label">Tableau</span>
+            </a>
+            <a href="operator.php" class="mobile-nav-item">
+                <span class="mobile-nav-icon">&#9203;</span>
+                <span class="mobile-nav-label">Saisie</span>
+            </a>
+            <a href="export-excel.php?week=<?= $filterWeek ?>&of=<?= urlencode($filterOf) ?>" class="mobile-nav-item"
+                target="_blank">
+                <span class="mobile-nav-icon">&#128196;</span>
+                <span class="mobile-nav-label">Export</span>
+            </a>
+            <a href="profile.php" class="mobile-nav-item">
+                <span class="mobile-nav-icon">&#128100;</span>
+                <span class="mobile-nav-label">Profil</span>
+            </a>
+            <a href="logout.php" class="mobile-nav-item" style="color: var(--error);">
+                <span class="mobile-nav-icon">&#x23FB;</span>
+                <span class="mobile-nav-label">Quitter</span>
+            </a>
+        </div>
+    </nav>
 </body>
 
 </html>
