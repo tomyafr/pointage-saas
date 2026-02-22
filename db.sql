@@ -125,3 +125,8 @@ CREATE TABLE IF NOT EXISTS active_sessions (
     numero_of VARCHAR(50) NOT NULL,
     start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ============================================
+-- TABLE USERS AVATAR
+-- ============================================
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_base64 TEXT;

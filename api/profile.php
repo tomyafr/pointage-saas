@@ -52,6 +52,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $message = "L'ancien mot de passe est incorrect.";
             $messageType = "error";
         }
+    } elseif ($_POST['action'] === 'update_avatar') {
+        $base64 = $_POST['avatar_base64'] ?? '';
+        if (!empty($base64)) {
+            $stmt = $db->prepare('UPDATE users SET avatar_base64 = ? WHERE id = ?');
+            $stmt->execute([$base64, $userId]);
+            $_SESSION['avatar'] = $base64;
+            $message = "✓ Photo de profil mise à jour avec succès.";
+            $messageType = "success";
+        }
     }
 }
 ?>
@@ -209,11 +218,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
             <div style="margin-top: auto; padding-top: 1.5rem; border-top: 1px solid var(--glass-border);">
                 <p
-                    style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.4rem;">
+                    style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.75rem;">
                     Connecté</p>
-                <p style="font-weight: 600; font-size: 0.85rem;">
-                    <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?>
-                </p>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <?php if (!empty($_SESSION['avatar'])): ?>
+                        <img src="<?= htmlspecialchars($_SESSION['avatar']) ?>"
+                            style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--glass-border);">
+                    <?php else: ?>
+                        <div
+                            style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;">
+                            <?= strtoupper(substr($_SESSION['user_prenom'], 0, 1) . substr($_SESSION['user_nom'], 0, 1)) ?>
+                        </div>
+                    <?php endif; ?>
+                    <p
+                        style="font-weight: 600; font-size: 0.85rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">
+                        <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?>
+                    </p>
+                </div>
                 <?php if (!$forceChange): ?>
                     <a href="logout.php" class="btn btn-ghost"
                         style="width: 100%; margin-top: 1rem; color: var(--error); border-color: rgba(244, 63, 94, 0.15); font-size: 0.75rem; padding: 0.6rem;">
@@ -246,7 +267,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 </div>
 
                 <div
-                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
                     <div>
                         <p style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase;">Nom Complet</p>
                         <p style="font-size: 1.1rem; font-weight: 700; color: var(--text-main);">
@@ -261,6 +282,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     </div>
                 </div>
 
+                <!-- FORM PHOTO DE PROFIL -->
+                <form method="POST" id="avatarForm"
+                    style="margin-bottom: 2rem; background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--glass-border);">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="action" value="update_avatar">
+                    <input type="hidden" name="avatar_base64" id="avatarBase64Input">
+
+                    <h4 style="margin-bottom: 0.5rem; color: var(--primary);">📷 Photo de Profil</h4>
+                    <p style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 1.5rem;">Celle-ci apparaîtra
+                        sur votre tableau de bord. Prenez une photo ou choisissez-en une dans la galerie.</p>
+
+                    <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+                        <label for="avatarInput"
+                            style="cursor: pointer; flex-shrink: 0; position: relative; width: 80px; height: 80px; border-radius: 50%; border: 2px dashed rgba(14, 165, 233, 0.4); display: flex; align-items: center; justify-content: center; overflow: hidden; background: rgba(0,0,0,0.3); transition: border-color 0.2s;">
+                            <?php if (!empty($_SESSION['avatar'])): ?>
+                                <img id="avatarPreview" src="<?= htmlspecialchars($_SESSION['avatar']) ?>"
+                                    style="width: 100%; height: 100%; object-fit: cover;">
+                            <?php else: ?>
+                                <img id="avatarPreview" src=""
+                                    style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                                <span id="avatarPlaceholder"
+                                    style="font-size: 2rem; color: var(--accent-cyan); font-weight: 300;">+</span>
+                            <?php endif; ?>
+                            <input type="file" id="avatarInput" accept="image/*" style="display: none;">
+                        </label>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <button type="button" onclick="document.getElementById('avatarInput').click()"
+                                class="btn btn-ghost"
+                                style="padding: 0.5rem 1rem; font-size: 0.8rem; border-color: var(--glass-border);">
+                                📁 Choisir une image...
+                            </button>
+                            <button type="submit" id="saveAvatarBtn" class="btn btn-primary"
+                                style="display: none; padding: 0.5rem 1rem; font-size: 0.8rem; background: var(--success); color: white;">
+                                ↓ Sauvegarder la photo
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <script>
+                    document.getElementById('avatarInput').addEventListener('change', function (e) {
+                        const file = e.target.files[0];
+                        if (!file) return;
+
+                        const reader = new FileReader();
+                        reader.onload = function (event) {
+                            const img = new Image();
+                            img.onload = function () {
+                                // Redimensionner l'image du tel en 300x300 pour pas surcharger la base de données PostgreSQL
+                                const canvas = document.createElement('canvas');
+                                const ctx = canvas.getContext('2d');
+
+                                const size = Math.min(img.width, img.height);
+                                const sx = (img.width - size) / 2;
+                                const sy = (img.height - size) / 2;
+
+                                canvas.width = 300;
+                                canvas.height = 300;
+                                ctx.drawImage(img, sx, sy, size, size, 0, 0, 300, 300);
+
+                                const base64 = canvas.toDataURL('image/jpeg', 0.8);
+                                document.getElementById('avatarBase64Input').value = base64;
+
+                                document.getElementById('avatarPreview').src = base64;
+                                document.getElementById('avatarPreview').style.display = 'block';
+                                const placeholder = document.getElementById('avatarPlaceholder');
+                                if (placeholder) placeholder.style.display = 'none';
+
+                                document.getElementById('saveAvatarBtn').style.display = 'inline-block';
+                            };
+                            img.src = event.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                </script>
+
+                <!-- FORM MOT DE PASSE -->
                 <form method="POST" class="glass" id="passwordForm"
                     style="padding: 2rem; border-radius: var(--radius-md); background: rgba(255,255,255,0.02);">
                     <?= csrfField() ?>

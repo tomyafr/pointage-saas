@@ -47,7 +47,7 @@ $allUsers = $stmtUsers->fetchAll();
 // ── Requête principale : tous les pointages de la période ─────────────────
 $query = '
     SELECT p.id, p.numero_of, p.heures, p.date_pointage, p.synced_bc, p.created_at,
-           u.id as user_id, u.nom, u.prenom, u.role
+           u.id as user_id, u.nom, u.prenom, u.role, u.avatar_base64
     FROM pointages p
     JOIN users u ON p.user_id = u.id
     WHERE p.date_pointage BETWEEN ? AND ?
@@ -77,6 +77,7 @@ foreach ($pointages as $p) {
         $statsParOperateur[$uid] = [
             'nom' => $p['nom'],
             'prenom' => $p['prenom'],
+            'avatar_base64' => $p['avatar_base64'] ?? '',
             'total' => 0,
             'nb_of' => [],
             'nb_jours' => [],
@@ -286,11 +287,19 @@ $nbOperateurs = count($statsParOperateur);
             </nav>
 
             <div style="margin-top:auto;padding-top:1.5rem;border-top:1px solid var(--glass-border);">
-                <p style="font-size:0.65rem;color:var(--text-dim);text-transform:uppercase;margin-bottom:0.4rem;">
-                    Connecté</p>
-                <p style="font-weight:600;font-size:0.85rem;">
-                    <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?>
-                </p>
+                <p style="font-size: 0.65rem; color: var(--text-dim); text-transform: uppercase; margin-bottom: 0.75rem;">Connecté</p>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <?php if (!empty($_SESSION['avatar'])): ?>
+                        <img src="<?= htmlspecialchars($_SESSION['avatar']) ?>" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid var(--glass-border);">
+                    <?php else: ?>
+                        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem;">
+                            <?= strtoupper(substr($_SESSION['user_prenom'], 0, 1) . substr($_SESSION['user_nom'], 0, 1)) ?>
+                        </div>
+                    <?php endif; ?>
+                    <p style="font-weight: 600; font-size: 0.85rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">
+                        <?= htmlspecialchars($_SESSION['user_prenom'] . ' ' . $_SESSION['user_nom']) ?>
+                    </p>
+                </div>
                 <a href="logout.php" class="btn btn-ghost sidebar-link"
                     style="width:100%;margin-top:1rem;color:var(--error);border-color:rgba(244,63,94,0.15);font-size:0.75rem;padding:0.6rem;">
                     Se d&eacute;connecter
@@ -300,13 +309,11 @@ $nbOperateurs = count($statsParOperateur);
 
         <main class="main-content">
             <!-- Titre -->
+            <!-- Titre -->
             <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;" class="animate-in">
-                <a href="chef.php" style="color:var(--text-dim);text-decoration:none;font-size:0.85rem;">&#8592; Tableau
-                    de bord</a>
-                <span style="color:var(--glass-border);">|</span>
                 <h1
                     style="font-size:1.4rem;background:linear-gradient(135deg,var(--primary),var(--primary-light));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">
-                    &#128337; Historique G&eacute;n&eacute;ral
+                    Historique G&eacute;n&eacute;ral
                 </h1>
             </div>
 
@@ -356,9 +363,14 @@ $nbOperateurs = count($statsParOperateur);
                         class="op-cards-grid">
                         <?php foreach ($statsParOperateur as $uid => $op): ?>
                             <div class="op-card">
-                                <div class="avatar">
-                                    <?= strtoupper(substr($op['prenom'], 0, 1) . substr($op['nom'], 0, 1)) ?>
-                                </div>
+                                <?php if (!empty($op['avatar_base64'])): ?>
+                                    <img src="<?= htmlspecialchars($op['avatar_base64']) ?>" class="avatar" alt="Avatar"
+                                        style="object-fit: cover;">
+                                <?php else: ?>
+                                    <div class="avatar">
+                                        <?= strtoupper(substr($op['prenom'], 0, 1) . substr($op['nom'], 0, 1)) ?>
+                                    </div>
+                                <?php endif; ?>
                                 <div style="flex:1;min-width:0;">
                                     <div
                                         style="font-weight:700;font-size:0.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
@@ -451,9 +463,14 @@ $nbOperateurs = count($statsParOperateur);
                                     <tr>
                                         <td>
                                             <div style="display:flex;align-items:center;gap:0.6rem;">
-                                                <div class="avatar">
-                                                    <?= strtoupper(substr($p['prenom'], 0, 1) . substr($p['nom'], 0, 1)) ?>
-                                                </div>
+                                                <?php if (!empty($p['avatar_base64'])): ?>
+                                                    <img src="<?= htmlspecialchars($p['avatar_base64']) ?>" class="avatar"
+                                                        style="object-fit: cover;" alt="">
+                                                <?php else: ?>
+                                                    <div class="avatar">
+                                                        <?= strtoupper(substr($p['prenom'], 0, 1) . substr($p['nom'], 0, 1)) ?>
+                                                    </div>
+                                                <?php endif; ?>
                                                 <span style="font-weight:600;">
                                                     <?= htmlspecialchars($p['prenom'] . ' ' . $p['nom']) ?>
                                                 </span>
@@ -540,8 +557,7 @@ $nbOperateurs = count($statsParOperateur);
         let debounceTimer;
         function clearDebounce() {
             clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => document.getElementById('filterForm').submit(), 700);
-        }
+            debounceTimer = setTimeout(() => document.getElementById('filterForm').submit(), 700);     }
     </script>
 </body>
 

@@ -67,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'Veuillez remplir tous les champs.';
         } else {
             // Pas d'énumération : message identique que le compte existe ou non
-            $stmt = $db->prepare('SELECT id, nom, prenom, password_hash, role, must_change_password FROM users WHERE nom = ? AND actif IS TRUE');
+            $stmt = $db->prepare('SELECT id, nom, prenom, password_hash, role, must_change_password, avatar_base64 FROM users WHERE nom = ? AND actif IS TRUE');
             $stmt->execute([$nom]);
             $user = $stmt->fetch();
 
@@ -84,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['login_time'] = time();
                 $_SESSION['must_change_password'] = !empty($user['must_change_password']);
+                $_SESSION['avatar'] = $user['avatar_base64'] ?? '';
                 setSessionBackup();
 
                 logAudit('LOGIN_SUCCESS', "User: $nom, IP: $ip");
