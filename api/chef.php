@@ -408,6 +408,10 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
                     style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;">
                     <span>&#128337;</span> Historique
                 </a>
+                <a href="equipe.php" class="btn btn-ghost sidebar-link"
+                    style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;">
+                    <span>&#128101;</span> Mon Équipe
+                </a>
                 <a href="export-excel.php?week=<?= $filterWeek ?>&amp;of=<?= urlencode($filterOf) ?>"
                     class="btn btn-ghost sidebar-link"
                     style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;" target="_blank">
@@ -951,13 +955,13 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
                 <span class="mobile-nav-icon">&#128337;</span>
                 <span class="mobile-nav-label">Historique</span>
             </a>
+            <a href="equipe.php" class="mobile-nav-item">
+                <span class="mobile-nav-icon">&#128101;</span>
+                <span class="mobile-nav-label">Équipe</span>
+            </a>
             <a href="export-excel.php?week=<?= $filterWeek ?>&of=<?= urlencode($filterOf) ?>" class="mobile-nav-item">
                 <span class="mobile-nav-icon">&#128196;</span>
                 <span class="mobile-nav-label">Export</span>
-            </a>
-            <a href="logout.php" class="mobile-nav-item" style="color: var(--error);">
-                <span class="mobile-nav-icon">&#x23FB;</span>
-                <span class="mobile-nav-label">Quitter</span>
             </a>
         </div>
     </nav>
