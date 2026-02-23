@@ -78,16 +78,18 @@ $stmt = $db->prepare($query);
 $stmt->execute($params);
 $pointages = $stmt->fetchAll();
 
-// Résumé par OF
+// Résumé par OF et Opérateur
 $queryResume = '
     SELECT 
         p.numero_of,
+        u.prenom,
+        u.nom,
         SUM(p.heures) as total_heures,
-        COUNT(DISTINCT p.user_id) as nb_operateurs,
         COUNT(p.id) as nb_pointages,
         SUM(CASE WHEN p.synced_bc IS TRUE THEN p.heures ELSE 0 END) as heures_sync,
         SUM(CASE WHEN p.synced_bc IS FALSE THEN p.heures ELSE 0 END) as heures_pending
     FROM pointages p
+    JOIN users u ON p.user_id = u.id
     WHERE p.date_pointage BETWEEN ? AND ?
 ';
 $paramsResume = [$dateDebut, $dateFin];
@@ -102,7 +104,7 @@ if (!empty($filterOf)) {
     $paramsResume[] = '%' . $filterOf . '%';
 }
 
-$queryResume .= ' GROUP BY p.numero_of ORDER BY p.numero_of ASC';
+$queryResume .= ' GROUP BY p.numero_of, u.prenom, u.nom ORDER BY p.numero_of ASC, u.nom ASC';
 
 $stmtResume = $db->prepare($queryResume);
 $stmtResume->execute($paramsResume);
@@ -343,19 +345,20 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
         </Style>
     </Styles>
 
-    <!-- ======= FEUILLE 1 : RÉSUMÉ PAR OF ======= -->
-    <Worksheet ss:Name="Résumé par OF">
+    <!-- ======= FEUILLE 1 : RÉSUMÉ PAR OF & OPÉRATEUR ======= -->
+    <Worksheet ss:Name="Résumé par OF et Opérateur">
         <Table>
             <Column ss:Width="120" />
+            <Column ss:Width="160" />
             <Column ss:Width="100" />
-            <Column ss:Width="100" />
-            <Column ss:Width="80" />
             <Column ss:Width="110" />
             <Column ss:Width="110" />
+            <Column ss:Width="100" />
 
             <!-- Titre -->
             <Row>
-                <Cell ss:StyleID="title"><Data ss:Type="String">Pointage Atelier — Résumé par OF</Data></Cell>
+                <Cell ss:StyleID="title"><Data ss:Type="String">Pointage Atelier — Résumé par OF &amp; Opérateur</Data>
+                </Cell>
             </Row>
             <Row>
                 <Cell ss:StyleID="subtitle"><Data ss:Type="String">Mouvement du
@@ -370,10 +373,10 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
             <!-- En-têtes -->
             <Row>
                 <Cell ss:StyleID="header"><Data ss:Type="String">N° OF</Data></Cell>
+                <Cell ss:StyleID="header"><Data ss:Type="String">Opérateur</Data></Cell>
                 <Cell ss:StyleID="header"><Data ss:Type="String">Total Heures</Data></Cell>
                 <Cell ss:StyleID="header"><Data ss:Type="String">H. Synchronisées</Data></Cell>
                 <Cell ss:StyleID="header"><Data ss:Type="String">H. En attente</Data></Cell>
-                <Cell ss:StyleID="header"><Data ss:Type="String">Opérateurs</Data></Cell>
                 <Cell ss:StyleID="header"><Data ss:Type="String">Nb Pointages</Data></Cell>
             </Row>
 
@@ -381,10 +384,11 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
             <?php foreach ($resume as $r): ?>
                 <Row>
                     <Cell ss:StyleID="of_bold"><Data ss:Type="String"><?= htmlspecialchars($r['numero_of']) ?></Data></Cell>
+                    <Cell ss:StyleID="cell_text"><Data
+                            ss:Type="String"><?= htmlspecialchars($r['prenom'] . ' ' . $r['nom']) ?></Data></Cell>
                     <Cell ss:StyleID="number"><Data ss:Type="Number"><?= $r['total_heures'] ?></Data></Cell>
                     <Cell ss:StyleID="synced"><Data ss:Type="Number"><?= $r['heures_sync'] ?></Data></Cell>
                     <Cell ss:StyleID="pending"><Data ss:Type="Number"><?= $r['heures_pending'] ?></Data></Cell>
-                    <Cell ss:StyleID="center"><Data ss:Type="Number"><?= $r['nb_operateurs'] ?></Data></Cell>
                     <Cell ss:StyleID="center"><Data ss:Type="Number"><?= $r['nb_pointages'] ?></Data></Cell>
                 </Row>
             <?php endforeach; ?>
@@ -392,12 +396,12 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
             <!-- Total -->
             <Row>
                 <Cell ss:StyleID="total_label"><Data ss:Type="String">TOTAL</Data></Cell>
+                <Cell ss:StyleID="total_label"></Cell>
                 <Cell ss:StyleID="total"><Data ss:Type="Number"><?= $totalGlobal ?></Data></Cell>
                 <Cell ss:StyleID="total"><Data
                         ss:Type="Number"><?= array_sum(array_column($resume, 'heures_sync')) ?></Data></Cell>
                 <Cell ss:StyleID="total"><Data
                         ss:Type="Number"><?= array_sum(array_column($resume, 'heures_pending')) ?></Data></Cell>
-                <Cell ss:StyleID="total_label"></Cell>
                 <Cell ss:StyleID="total"><Data
                         ss:Type="Number"><?= array_sum(array_column($resume, 'nb_pointages')) ?></Data></Cell>
             </Row>
