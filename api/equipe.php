@@ -20,6 +20,7 @@ $stmtUsers = $db->prepare('
         u.nom, 
         u.prenom, 
         u.role,
+        u.statut,
         u.created_at,
         (SELECT date_pointage FROM pointages p WHERE p.user_id = u.id ORDER BY p.date_pointage DESC LIMIT 1) as dernier_pointage,
         (SELECT SUM(heures) FROM pointages p WHERE p.user_id = u.id AND p.date_pointage BETWEEN ? AND ?) as heures_semaine,
@@ -184,6 +185,11 @@ $equipe = $stmtUsers->fetchAll();
             margin-top: 0.25rem;
         }
     </style>
+    <script>
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.add('light-mode');
+        }
+    </script>
 </head>
 
 <body>
@@ -299,7 +305,14 @@ $equipe = $stmtUsers->fetchAll();
                                     <span class="role-badge"
                                         style="background: rgba(255, 179, 0, 0.2); color: var(--primary);">Chef d'Atelier</span>
                                 <?php else: ?>
-                                    <span class="role-badge">Opérateur</span>
+                                    <span class="role-badge" style="margin-right:0.25rem;">Opérateur</span>
+                                <?php endif; ?>
+                                <?php if ($membre['statut'] === 'pause' && !$isActive): ?>
+                                    <span class="role-badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;">En
+                                        pause</span>
+                                <?php elseif ($membre['statut'] === 'absent' && !$isActive): ?>
+                                    <span class="role-badge"
+                                        style="background: rgba(244, 63, 94, 0.2); color: #f43f5e;">Absent</span>
                                 <?php endif; ?>
                             </div>
                         </div>

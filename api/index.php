@@ -41,6 +41,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $db = getDB();
     try {
         $db->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_base64 TEXT");
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS password_requests (
+                id SERIAL PRIMARY KEY,
+                user_id INT REFERENCES users(id) ON DELETE CASCADE,
+                new_password_hash VARCHAR(255) NOT NULL,
+                status VARCHAR(20) DEFAULT 'pending',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ");
     } catch (Exception $e) {
     }
     $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'];
@@ -114,6 +123,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $error = "Accès refusé. Vérifiez vos identifiants.";
             }
         }
+    } elseif ($_POST['action'] === 'forgot_password') {
+        $nom = strtoupper(trim($_POST['nom_oubli'] ?? ''));
+        $newPass = $_POST['new_pass_oubli'] ?? '';
+        if (empty($nom) || empty($newPass)) {
+            $error = 'Veuillez remplir tous les champs.';
+        } else {
+            // Find user
+            $stmt = $db->prepare('SELECT id FROM users WHERE nom = ? AND actif IS TRUE');
+            $stmt->execute([$nom]);
+            $u = $stmt->fetch();
+            if ($u) {
+                // Delete previous pending requests for this user to avoid spam
+                $db->prepare("DELETE FROM password_requests WHERE user_id = ? AND status = 'pending'")->execute([$u['id']]);
+
+                $hash = password_hash($newPass, PASSWORD_BCRYPT, ['cost' => 12]);
+                $db->prepare("INSERT INTO password_requests (user_id, new_password_hash) VALUES (?, ?)")->execute([$u['id'], $hash]);
+                $successMsg = "Demande envoyée à l'administrateur.";
+            } else {
+                $error = "Identifiant introuvable.";
+            }
+        }
     }
 }
 ?>
@@ -131,6 +161,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="theme-color" content="#020617">
 
     <link rel="stylesheet" href="/assets/style.css">
+    <script>
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.add('light-mode');
+        }
+    </script>
 </head>
 
 <body class="bg-main">
@@ -162,6 +197,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <span><?= htmlspecialchars($error) ?></span>
                 </div>
             <?php endif; ?>
+            <?php if (isset($successMsg)): ?>
+                <div class="alert alert-success">
+                    <span>✓</span>
+                    <span><?= htmlspecialchars($successMsg) ?></span>
+                </div>
+            <?php endif; ?>
+
+            <input type="hidden" name="action" value="login">
 
             <div class="form-group">
                 <label for="nom" class="label">Identifiant</label>
@@ -186,7 +229,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit" class="btn btn-primary login-btn" style="width: 100%;">
                 Connexion Sécurisée →
             </button>
+
+            <button type="button" class="btn btn-ghost" style="width: 100%; margin-top: 1rem; font-size: 0.75rem;"
+                onclick="document.getElementById('forgotModal').style.display='flex'">
+                J'ai oublié mon mot de passe
+            </button>
         </form>
+
+        <!-- MODAL FORGOT PASSWORD -->
+        <div id="forgotModal"
+            style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; background:rgba(0,0,0,0.8); align-items:center; justify-content:center; backdrop-filter:blur(5px);">
+            <div class="card glass animate-in"
+                style="width: 100%; max-width: 400px; padding: 2.5rem; position: relative;">
+                <button onclick="document.getElementById('forgotModal').style.display='none'"
+                    style="position:absolute; top:1rem; right:1.5rem; background:none; border:none; color:var(--text-dim); font-size:1.5rem; cursor:pointer;">&times;</button>
+                <h3 style="margin-bottom: 0.5rem; font-size: 1.25rem;">Mot de passe oublié</h3>
+                <p style="font-size: 0.8rem; color: var(--text-dim); margin-bottom: 1.5rem; line-height: 1.4;">
+                    Veuillez inscrire le nouveau mot de passe souhaité. Votre chef d'atelier devra accepter votre
+                    demande dans sa boîte de réception.
+                </p>
+
+                <form method="POST">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="action" value="forgot_password">
+
+                    <div class="form-group">
+                        <label class="label">Votre Identifiant</label>
+                        <input type="text" name="nom_oubli" class="input" required autocomplete="off"
+                            style="text-transform: uppercase;">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="label">Nouveau mot de passe souhaité</label>
+                        <div class="input-wrapper">
+                            <input type="password" name="new_pass_oubli" class="input" required
+                                style="padding-left: 1.25rem;">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Envoyer la demande</button>
+                </form>
+            </div>
+        </div>
 
         <div class="login-footer animate-in-delay-2">
             RAOUL LENOIR SAS · <?= date('Y') ?>

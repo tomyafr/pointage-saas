@@ -314,6 +314,11 @@ $nbOperateurs = count($statsParOperateur);
             }
         }
     </style>
+    <script>
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.add('light-mode');
+        }
+    </script>
 </head>
 
 <body>

@@ -85,8 +85,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
             }
         }
+    } elseif ($_POST['action'] === 'accept_pwd') {
+        $reqId = (int) ($_POST['req_id'] ?? 0);
+        $stmt = $db->prepare("SELECT * FROM password_requests WHERE id = ? AND status = 'pending'");
+        $stmt->execute([$reqId]);
+        $req = $stmt->fetch();
+        if ($req) {
+            $db->prepare("UPDATE users SET password_hash = ?, must_change_password = FALSE WHERE id = ?")->execute([$req['new_password_hash'], $req['user_id']]);
+            $db->prepare("UPDATE password_requests SET status = 'accepted' WHERE id = ?")->execute([$reqId]);
+            $message = "Demande de mot de passe acceptée.";
+            $messageType = "success";
+        }
+    } elseif ($_POST['action'] === 'reject_pwd') {
+        $reqId = (int) ($_POST['req_id'] ?? 0);
+        $db->prepare("UPDATE password_requests SET status = 'rejected' WHERE id = ?")->execute([$reqId]);
+        $message = "Demande de mot de passe refusée.";
+        $messageType = "info";
     }
 }
+
+// Récupération des demandes de mot de passe en attente
+$stmtPwd = $db->query("
+    SELECT pr.id, pr.created_at, u.nom, u.prenom
+    FROM password_requests pr
+    JOIN users u ON pr.user_id = u.id
+    WHERE pr.status = 'pending'
+    ORDER BY pr.created_at ASC
+");
+$pendingPwdRequests = $stmtPwd->fetchAll();
 
 // Récupérer les totaux par OF
 $query = '
@@ -366,6 +392,11 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
             transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
         }
     </style>
+    <script>
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.add('light-mode');
+        }
+    </script>
 </head>
 
 <body>
@@ -477,6 +508,71 @@ $syncRate = ($totalSynced + $totalPending) > 0 ? round(($totalSynced / ($totalSy
                     <span><?= htmlspecialchars($message) ?></span>
                 </div>
             <?php endif; ?>
+
+            <!-- INBOX MOT DE PASSE OUBLIÉ -->
+            <div style="display:flex; justify-content:flex-end; margin-bottom: 2rem;">
+                <button onclick="document.getElementById('pwdInboxModal').style.display='flex'"
+                    style="background:var(--bg-glass); border:1px solid var(--glass-border); padding:0.6rem 1rem; border-radius:var(--radius-md); color:var(--text-main); font-family:var(--font-main); cursor:pointer; display:flex; align-items:center; gap:0.5rem; transition:var(--transition-fast);">
+                    <span style="font-size:1.2rem;">🔔</span>
+                    Boîte de réception
+                    <?php if (count($pendingPwdRequests) > 0): ?>
+                        <span
+                            style="background:var(--error); color:white; border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:bold;">
+                            <?= count($pendingPwdRequests) ?>
+                        </span>
+                    <?php endif; ?>
+                </button>
+            </div>
+
+            <div id="pwdInboxModal"
+                style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; background:rgba(0,0,0,0.8); align-items:center; justify-content:center; backdrop-filter:blur(5px);">
+                <div class="card glass animate-in"
+                    style="width:100%; max-width:500px; padding:2.5rem; position:relative; max-height: 80vh; overflow-y:auto;">
+                    <button onclick="document.getElementById('pwdInboxModal').style.display='none'"
+                        style="position:absolute; top:1rem; right:1.5rem; background:none; border:none; color:var(--text-dim); font-size:1.5rem; cursor:pointer;">&times;</button>
+                    <h3
+                        style="margin-bottom:1.5rem; color:var(--primary); display:flex; align-items:center; gap:0.75rem;">
+                        <span style="font-size:1.5rem;">📥</span> Demandes de mot de passe
+                    </h3>
+
+                    <?php if (count($pendingPwdRequests) === 0): ?>
+                        <p style="color:var(--text-dim); font-size:0.85rem; text-align:center; padding: 2rem 0;">Aucune
+                            demande en attente.</p>
+                    <?php else: ?>
+                        <div style="display:flex; flex-direction:column; gap:1rem;">
+                            <?php foreach ($pendingPwdRequests as $req): ?>
+                                <div
+                                    style="background:rgba(255,255,255,0.05); border:1px solid var(--glass-border); padding:1rem; border-radius:var(--radius-sm); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+                                    <div>
+                                        <p style="font-weight:700; font-size:0.95rem; margin-bottom:0.25rem;">
+                                            <?= htmlspecialchars($req['prenom'] . ' ' . $req['nom']) ?>
+                                        </p>
+                                        <p style="font-size:0.7rem; color:var(--text-dim);">
+                                            Demande reçue le <?= date('d/m/Y à H:i', strtotime($req['created_at'])) ?>
+                                        </p>
+                                    </div>
+                                    <div style="display:flex; gap:0.5rem;">
+                                        <form method="POST" style="margin:0;">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="action" value="accept_pwd">
+                                            <input type="hidden" name="req_id" value="<?= $req['id'] ?>">
+                                            <button type="submit" class="btn btn-primary"
+                                                style="padding:0.4rem 0.8rem; font-size:0.75rem; background:var(--success); color:white; border-color:var(--success);">Accepter</button>
+                                        </form>
+                                        <form method="POST" style="margin:0;">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="action" value="reject_pwd">
+                                            <input type="hidden" name="req_id" value="<?= $req['id'] ?>">
+                                            <button type="submit" class="btn btn-ghost"
+                                                style="padding:0.4rem 0.8rem; font-size:0.75rem; color:var(--error); border-color:rgba(244,63,94,0.3);">Refuser</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
 
             <!-- ── ALERTES ANTI-OUBLI ── -->
             <?php if (!empty($alertesOubli)): ?>

@@ -7,6 +7,12 @@ $messageType = '';
 $userId = $_SESSION['user_id'];
 $db = getDB();
 
+// Mettre à jour la BDD pour le statut if needed
+try {
+    $db->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS statut VARCHAR(20) DEFAULT 'actif'");
+} catch (Exception $e) {
+}
+
 // Forcer le changement si flag actif
 $forceChange = !empty($_GET['force']) || !empty($_SESSION['must_change_password']);
 
@@ -61,8 +67,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $message = "✓ Photo de profil mise à jour avec succès.";
             $messageType = "success";
         }
+    } elseif ($_POST['action'] === 'update_statut') {
+        $newStatut = $_POST['statut'] ?? 'actif';
+        if (in_array($newStatut, ['actif', 'pause', 'absent'])) {
+            $stmt = $db->prepare('UPDATE users SET statut = ? WHERE id = ?');
+            $stmt->execute([$newStatut, $userId]);
+            $message = "✓ Statut mis à jour avec succès.";
+            $messageType = "success";
+        }
     }
 }
+
+// Fetch current user
+$stmtUser = $db->prepare('SELECT statut FROM users WHERE id = ?');
+$stmtUser->execute([$userId]);
+$userCurrent = $stmtUser->fetch();
+$currentStatut = $userCurrent ? $userCurrent['statut'] : 'actif';
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -185,6 +205,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             color: #ef4444;
         }
     </style>
+    <script>
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.add('light-mode');
+        }
+    </script>
 </head>
 
 <body>
@@ -296,6 +321,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                         <p style="font-size: 1.1rem; font-weight: 700; color: var(--primary);">
                             <?= $_SESSION['role'] === 'chef' ? 'Administrateur' : 'Opérateur' ?>
                         </p>
+                    </div>
+                </div>
+
+                <!-- PREFERENCES / STATUT -->
+                <div
+                    style="margin-bottom: 2rem; background: rgba(255,255,255,0.02); padding: 1.5rem; border-radius: var(--radius-md); border: 1px solid var(--glass-border);">
+                    <h4 style="margin-bottom: 1.5rem; color: var(--primary);">⚙️ Préférences & Statut</h4>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem;">
+                        <!-- Theme Toggle -->
+                        <div>
+                            <p
+                                style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">
+                                Thème d'affichage</p>
+                            <label style="display: flex; align-items: center; gap: 0.75rem; cursor: pointer;">
+                                <input type="checkbox" id="themeToggle"
+                                    style="width: 1.25rem; height: 1.25rem; cursor: pointer;">
+                                <span id="themeToggleLabel" style="font-weight: bold; color: var(--text-main);">Mode
+                                    Sombre 🌙</span>
+                            </label>
+                            <script>
+                                const themeToggle = document.getElementById('themeToggle');
+                                const themeLabel = document.getElementById('themeToggleLabel');
+                                const isLight = (localStorage.getItem('theme') === 'light');
+                                themeToggle.checked = !isLight;
+                                themeLabel.innerHTML = isLight ? 'Mode Clair ☀️' : 'Mode Sombre 🌙';
+
+                                themeToggle.addEventListener('change', (e) => {
+                                    if (e.target.checked) {
+                                        localStorage.setItem('theme', 'dark');
+                                        document.documentElement.classList.remove('light-mode');
+                                        themeLabel.innerHTML = 'Mode Sombre 🌙';
+                                    } else {
+                                        localStorage.setItem('theme', 'light');
+                                        document.documentElement.classList.add('light-mode');
+                                        themeLabel.innerHTML = 'Mode Clair ☀️';
+                                    }
+                                });
+                            </script>
+                        </div>
+
+                        <!-- Statut -->
+                        <form method="POST">
+                            <?= csrfField() ?>
+                            <input type="hidden" name="action" value="update_statut">
+                            <p
+                                style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase;">
+                                Statut Actuel</p>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <select name="statut" class="input" style="flex:1; padding: 0.5rem; flex-basis: 60%;">
+                                    <option value="actif" <?= $currentStatut === 'actif' ? 'selected' : '' ?>>🟢 Actif
+                                    </option>
+                                    <option value="pause" <?= $currentStatut === 'pause' ? 'selected' : '' ?>>☕ En pause
+                                    </option>
+                                    <option value="absent" <?= $currentStatut === 'absent' ? 'selected' : '' ?>>🔴
+                                        Absent(e)</option>
+                                </select>
+                                <button type="submit" class="btn btn-ghost" style="padding: 0.5rem 1rem;">Mettre à
+                                    jour</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 

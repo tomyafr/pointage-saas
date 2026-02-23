@@ -1241,3 +1241,82 @@ input[type="checkbox"] {
         height: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
     }
 }
+
+/* ═══════════ LIGHT MODE ═══════════ */
+html.light-mode body {
+    --bg-main: #f1f5f9;
+    --bg-elevated: #ffffff;
+    --bg-glass: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(0, 0, 0, 0.1);
+    --glass-border-hover: rgba(0, 0, 0, 0.2);
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --text-dim: #64748b;
+    --secondary: #e2e8f0;
+    --glass-shine: linear-gradient(135deg, rgba(0, 0, 0, 0.02) 0%, transparent 50%, rgba(0, 0, 0, 0.01) 100%);
+}
+
+html.light-mode body::before,
+html.light-mode body::after,
+html.light-mode .video-background,
+html.light-mode .team-active-bg {
+    display: none;
+}
+
+html.light-mode .btn-ghost {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--text-main);
+    border: 1px solid var(--glass-border);
+}
+
+html.light-mode .btn-ghost:hover {
+    background: rgba(0, 0, 0, 0.08);
+    border-color: var(--primary);
+}
+
+html.light-mode .input,
+html.light-mode select.input {
+    background: rgba(255, 255, 255, 0.5) !important;
+    color: var(--text-main) !important;
+}
+
+html.light-mode .input:focus {
+    background: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.light-mode .sidebar {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+html.light-mode .mobile-header,
+html.light-mode .mobile-bottom-nav {
+    background: rgba(255, 255, 255, 0.92);
+}
+
+html.light-mode .stat-item,
+html.light-mode .login-card,
+html.light-mode .card,
+html.light-mode .team-card {
+    background: var(--bg-glass);
+}
+
+html.light-mode .text-gradient {
+    background: linear-gradient(135deg, #e6a200 0%, #b37700 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+html.light-mode .team-stats {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+html.light-mode .role-badge {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+html.light-mode .active-status {
+    background: rgba(16, 185, 129, 0.15);
+    color: #059669;
+}

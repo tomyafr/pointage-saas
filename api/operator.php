@@ -250,6 +250,11 @@ $activeTab = $_GET['tab'] ?? (isset($_GET['period']) ? 'historique' : 'saisie');
             background: var(--primary-subtle); border-color: var(--primary); color: var(--primary);
         }
     </style>
+    <script>
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.add('light-mode');
+        }
+    </script>
 </head>
 <body>
     <!-- ═══ HEADER MOBILE ═══ -->
