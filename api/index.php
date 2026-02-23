@@ -25,6 +25,24 @@ if (isset($_GET['logout'])) {
 
 startSecureSession();
 
+// Endpoint d'interrogation de la demande de MDP
+if (isset($_GET['check_pwd'])) {
+    $reqId = (int) $_GET['check_pwd'];
+    header('Content-Type: application/json');
+    if ($reqId > 0) {
+        $db = getDB();
+        $stmt = $db->prepare("SELECT status FROM password_requests WHERE id = ?");
+        $stmt->execute([$reqId]);
+        $row = $stmt->fetch();
+        if ($row) {
+            echo json_encode(['success' => true, 'status' => $row['status']]);
+            exit;
+        }
+    }
+    echo json_encode(['success' => false]);
+    exit;
+}
+
 // REDIRECTION AUTOMATIQUE SI DÉJÀ CONNECTÉ
 if (isset($_SESSION['user_id'])) {
     $target = ($_SESSION['role'] === 'chef' ? 'chef.php' : 'operator.php');
@@ -139,9 +157,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $hash = password_hash($newPass, PASSWORD_BCRYPT, ['cost' => 12]);
                 $db->prepare("INSERT INTO password_requests (user_id, new_password_hash) VALUES (?, ?)")->execute([$u['id'], $hash]);
-                $successMsg = "Demande envoyée à l'administrateur.";
+                $pendingReqId = $db->lastInsertId();
             } else {
                 $error = "Identifiant introuvable.";
+                $showForgotModal = true;
             }
         }
     }
@@ -188,7 +207,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p class="login-subtitle">Système de Pointage Industriel</p>
         </div>
 
-        <form method="POST" class="login-card glass animate-in" autocomplete="off">
+        <form method="POST" class="login-card glass animate-in" autocomplete="off" <?= isset($pendingReqId) ? 'style="display:none;"' : '' ?>>
             <?= csrfField() ?>
 
             <?php if ($error): ?>
@@ -255,15 +274,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                     <div class="form-group">
                         <label class="label">Votre Identifiant</label>
-                        <input type="text" name="nom_oubli" class="input" required autocomplete="off"
-                            style="text-transform: uppercase;">
+                        <div class="input-wrapper">
+                            <span class="input-icon">👤</span>
+                            <input type="text" name="nom_oubli" id="nom_oubli" class="input"
+                                placeholder="Votre identifiant" required autocomplete="off" spellcheck="false"
+                                maxlength="100" style="text-transform: uppercase;">
+                            <button type="button" class="input-clear" id="resetNomOubli">✕</button>
+                        </div>
                     </div>
 
                     <div class="form-group">
                         <label class="label">Nouveau mot de passe souhaité</label>
                         <div class="input-wrapper">
-                            <input type="password" name="new_pass_oubli" class="input" required
-                                style="padding-left: 1.25rem;">
+                            <span class="input-icon">🔒</span>
+                            <input type="password" name="new_pass_oubli" id="new_pass_oubli" class="input"
+                                placeholder="••••••••" required maxlength="128">
+                            <button type="button" class="password-toggle" id="togglePasswordOubli">👁</button>
                         </div>
                     </div>
 
@@ -272,13 +298,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <div class="login-footer animate-in-delay-2">
+        <div class="login-footer animate-in-delay-2" <?= isset($pendingReqId) ? 'style="display:none;"' : '' ?>>
             RAOUL LENOIR SAS · <?= date('Y') ?>
         </div>
+
+        <?php if (isset($pendingReqId)): ?>
+            <!-- WAITING SCREEN -->
+            <div id="waitingScreen" class="card glass animate-in"
+                style="width: 100%; max-width: 440px; padding: 3rem 2.5rem; position: relative; text-align:center;">
+                <button onclick="window.location.href='index.php'"
+                    style="position:absolute; top:1rem; right:1.5rem; background:none; border:none; color:var(--text-dim); font-size:1.5rem; cursor:pointer;">&times;</button>
+                <div id="statusIcon" style="font-size: 3rem; margin-bottom: 1rem;">
+                    <div class="spinner"
+                        style="border-top-color: var(--primary); width: 48px; height: 48px; border-width:4px; margin: 0 auto;">
+                    </div>
+                </div>
+                <h3 id="statusTitle" style="margin-bottom: 1rem; color: var(--primary);">Demande envoyée</h3>
+                <p id="statusDesc" style="font-size: 0.85rem; color: var(--text-dim); line-height: 1.5;">
+                    Parfait ! Une demande de modification de votre mot de passe a bien été envoyée.<br><br>
+                    En attente de validation par l'administrateur...
+                </p>
+                <button id="successBtn" onclick="window.location.href='index.php'" class="btn btn-primary"
+                    style="display:none; width:100%; margin-top:1.5rem;">Retour à la connexion</button>
+            </div>
+            <script>
+                let pollingInterval = setInterval(() => {
+                    fetch('index.php?check_pwd=<?= $pendingReqId ?>')
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success && data.status === 'accepted') {
+                                clearInterval(pollingInterval);
+                                document.getElementById('statusIcon').innerHTML = '✅';
+                                document.getElementById('statusTitle').innerHTML = 'Mot de passe validé !';
+                                document.getElementById('statusTitle').style.color = 'var(--success)';
+                                document.getElementById('statusDesc').innerHTML = 'Votre demande a été acceptée par le chef d\'atelier. Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.';
+                                document.getElementById('successBtn').style.display = 'block';
+                            } else if (data.success && data.status === 'rejected') {
+                                clearInterval(pollingInterval);
+                                document.getElementById('statusIcon').innerHTML = '❌';
+                                document.getElementById('statusTitle').innerHTML = 'Demande refusée';
+                                document.getElementById('statusTitle').style.color = 'var(--error)';
+                                document.getElementById('statusDesc').innerHTML = 'Votre demande a été refusée par le chef d\'atelier. Veuillez vous rapprocher de lui.';
+                                document.getElementById('successBtn').style.display = 'block';
+                            }
+                        });
+                }, 3000); // Check every 3 seconds
+            </script>
+        <?php endif; ?>
     </div>
 
     <script>
-        // Toggle password visibility
+        // Toggle password visibility (Login Form)
         const togglePassword = document.querySelector('#togglePassword');
         const password = document.querySelector('#password');
         if (togglePassword && password) {
@@ -301,6 +371,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 this.value = this.value.toUpperCase();
             });
         }
+
+        // Modal: Toggle password visibility
+        const togglePasswordOubli = document.querySelector('#togglePasswordOubli');
+        const passwordOubli = document.querySelector('#new_pass_oubli');
+        if (togglePasswordOubli && passwordOubli) {
+            togglePasswordOubli.addEventListener('click', function () {
+                const type = passwordOubli.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordOubli.setAttribute('type', type);
+                this.textContent = type === 'password' ? '👁' : '🔒';
+            });
+        }
+
+        // Modal: Reset username field
+        const resetNomOubli = document.getElementById('resetNomOubli');
+        const nomOubliInput = document.getElementById('nom_oubli');
+        if (resetNomOubli && nomOubliInput) {
+            resetNomOubli.addEventListener('click', () => {
+                nomOubliInput.value = '';
+                nomOubliInput.focus();
+            });
+            nomOubliInput.addEventListener('input', function () {
+                this.value = this.value.toUpperCase();
+            });
+        }
+        
+        <?php if (!empty($showForgotModal)): ?>
+                document.getElementById('forgotModal').style.display='flex';
+        <?php endif; ?>
     </script>
     <script src="/assets/notifications.js"></script>
 </body>

@@ -3,6 +3,11 @@ require_once __DIR__ . '/../includes/config.php';
 requireAuth('chef');
 
 $db = getDB();
+try {
+    $db->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS statut VARCHAR(20) DEFAULT 'actif'");
+} catch (Exception $e) {
+}
+
 $week = getCurrentWeekDates();
 
 $dateDebutStr = $week['monday'];

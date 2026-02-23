@@ -5,6 +5,15 @@ requireAuth('chef');
 $db = getDB();
 try {
     $db->exec("CREATE TABLE IF NOT EXISTS active_sessions (user_id INT PRIMARY KEY REFERENCES users(id), numero_of VARCHAR(50) NOT NULL, start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+    $db->exec("
+        CREATE TABLE IF NOT EXISTS password_requests (
+            id SERIAL PRIMARY KEY,
+            user_id INT REFERENCES users(id) ON DELETE CASCADE,
+            new_password_hash VARCHAR(255) NOT NULL,
+            status VARCHAR(20) DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
 } catch (Exception $e) {
 }
 
