@@ -7,36 +7,37 @@ $week = getCurrentWeekDates();
 
 // ── Filtres GET validés ────────────────────────────────────────────────────
 $filterPeriod = $_GET['period'] ?? 'current';
-$allowedPeriods = ['current', 'last', 'month', 'all'];
-if (!in_array($filterPeriod, $allowedPeriods, true))
+$allowedPeriods = ['today', 'current', 'last', 'month', 'all'];
+if (!in_array($filterPeriod, $allowedPeriods, true)) {
     $filterPeriod = 'current';
+}
 
 $filterUser = intval($_GET['user'] ?? 0);
 $filterOf = substr(preg_replace('/[^\w\s\-\/]/', '', trim($_GET['of'] ?? '')), 0, 50);
 
 // Calcul des dates selon la période
-switch ($filterPeriod) {
-    case 'last':
-        $dateDebut = date('Y-m-d', strtotime($week['monday'] . ' -7 days'));
-        $dateFin = date('Y-m-d', strtotime($week['sunday'] . ' -7 days'));
-        $labelPeriod = 'Semaine précédente';
-        break;
-    case 'month':
-        $dateDebut = date('Y-m-01');
-        $dateFin = date('Y-m-d');
-        // Utiliser date() au lieu de strftime() (supprimé en PHP 8.2)
-        $moisNoms = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-        $labelPeriod = 'Ce mois (' . $moisNoms[(int) date('n')] . ' ' . date('Y') . ')';
-        break;
-    case 'all':
-        $dateDebut = '2020-01-01';
-        $dateFin = date('Y-m-d');
-        $labelPeriod = 'Tout l\'historique';
-        break;
-    default: // current
-        $dateDebut = $week['monday'];
-        $dateFin = $week['sunday'];
-        $labelPeriod = 'Semaine en cours';
+if ($filterPeriod === 'last') {
+    $dateDebut = date('Y-m-d', strtotime($week['monday'] . ' -7 days'));
+    $dateFin = date('Y-m-d', strtotime($week['sunday'] . ' -7 days'));
+    $labelPeriod = 'Semaine précédente';
+} elseif ($filterPeriod === 'today') {
+    $dateDebut = date('Y-m-d');
+    $dateFin = date('Y-m-d');
+    $labelPeriod = 'Aujourd\'hui';
+} elseif ($filterPeriod === 'month') {
+    $dateDebut = date('Y-m-01');
+    $dateFin = date('Y-m-d');
+    // Utiliser date() au lieu de strftime() (supprimé en PHP 8.2)
+    $moisNoms = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    $labelPeriod = 'Ce mois (' . $moisNoms[(int) date('n')] . ' ' . date('Y') . ')';
+} elseif ($filterPeriod === 'all') {
+    $dateDebut = '2020-01-01';
+    $dateFin = date('Y-m-d');
+    $labelPeriod = 'Tout l\'historique';
+} else { // current
+    $dateDebut = $week['monday'];
+    $dateFin = $week['sunday'];
+    $labelPeriod = 'Semaine en cours';
 }
 
 $message = '';
@@ -490,6 +491,8 @@ $nbOperateurs = count($statsParOperateur);
             <div class="card glass animate-in-delay-1" style="padding:1.5rem;margin-bottom:1.5rem;">
                 <form method="GET" class="filter-bar" id="filterForm">
                     <select name="period" onchange="this.form.submit()">
+                        <option value="today" <?= $filterPeriod === 'today' ? 'selected' : '' ?>>Aujourd'hui
+                        </option>
                         <option value="current" <?= $filterPeriod === 'current' ? 'selected' : '' ?>>Semaine en cours
                         </option>
                         <option value="last" <?= $filterPeriod === 'last' ? 'selected' : '' ?>>Semaine

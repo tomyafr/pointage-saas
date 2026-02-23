@@ -142,11 +142,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 }
 
 // Vérifier la session de prod en cours pour l'affichage
-$stmtActive = $db->prepare('SELECT numero_of, start_time FROM active_sessions WHERE user_id = ?');
+$stmtActive = $db->prepare('SELECT numero_of, start_time, EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - start_time)) as diff_seconds FROM active_sessions WHERE user_id = ?');
 $stmtActive->execute([$userId]);
 $activeSession = $stmtActive->fetch();
 
-$allowedPeriods = ['current', 'last', 'month', 'all'];
+$allowedPeriods = ['today', 'current', 'last', 'month', 'all'];
 $filterPeriod = $_GET['period'] ?? 'current';
 if (!in_array($filterPeriod, $allowedPeriods, true)) $filterPeriod = 'current';
 
@@ -154,7 +154,11 @@ $dateDebut = $week['monday'];
 $dateFin = $week['sunday'];
 $labelPeriod = 'Semaine en cours';
 
-if ($filterPeriod === 'last') {
+if ($filterPeriod === 'today') {
+    $dateDebut = date('Y-m-d');
+    $dateFin = date('Y-m-d');
+    $labelPeriod = 'Aujourd\'hui';
+} elseif ($filterPeriod === 'last') {
     $dateDebut = date('Y-m-d', strtotime($week['monday'] . ' -7 days'));
     $dateFin = date('Y-m-d', strtotime($week['sunday'] . ' -7 days'));
     $labelPeriod = 'Semaine précédente';
@@ -373,8 +377,8 @@ $activeTab = $_GET['tab'] ?? (isset($_GET['period']) ? 'historique' : 'saisie');
                             </div>
                             
                             <script>
-                                // Timer en direct JavaScript (Synchronisé avec le vrai temps Serveur pour éviter les décalages de fuseau)
-                                let diffSeconds = <?= max(0, time() - strtotime($activeSession['start_time'])) ?>;
+                                // Timer en direct JavaScript
+                                let diffSeconds = <?= max(0, intval($activeSession['diff_seconds'])) ?>;
                                 setInterval(() => {
                                     diffSeconds++;
                                     const h = String(Math.floor(diffSeconds / 3600)).padStart(2, '0');
@@ -497,6 +501,7 @@ $activeTab = $_GET['tab'] ?? (isset($_GET['period']) ? 'historique' : 'saisie');
                         <form method="GET" id="filterFormOp">
                             <input type="hidden" name="tab" value="historique">
                             <select name="period" class="input" style="background: rgba(15, 23, 42, 0.6); padding: 0.4rem 1rem; width: auto; color: var(--text-main);" onchange="this.form.submit()">
+                                <option value="today" <?= $filterPeriod==='today'?'selected':'' ?>>Aujourd'hui</option>
                                 <option value="current" <?= $filterPeriod==='current'?'selected':'' ?>>Semaine en cours</option>
                                 <option value="last" <?= $filterPeriod==='last'?'selected':'' ?>>Semaine précédente</option>
                                 <option value="month" <?= $filterPeriod==='month'?'selected':'' ?>>Ce mois</option>

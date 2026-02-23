@@ -15,7 +15,7 @@ $db = getDB();
 $week = getCurrentWeekDates();
 
 // Filtres — validation stricte des paramètres GET
-$allowedPeriods = ['current', 'last', 'month', 'all'];
+$allowedPeriods = ['today', 'current', 'last', 'month', 'all'];
 $filterPeriod = $_GET['week'] ?? 'current'; // Using 'week' for backward compatibility
 if (!in_array($filterPeriod, $allowedPeriods, true)) {
     $filterPeriod = 'current';
@@ -31,6 +31,9 @@ $filterOf = substr($filterOf, 0, 50); // Limite à 50 caractères
 if ($filterPeriod === 'last') {
     $dateDebut = date('Y-m-d', strtotime($week['monday'] . ' -7 days'));
     $dateFin = date('Y-m-d', strtotime($week['sunday'] . ' -7 days'));
+} elseif ($filterPeriod === 'today') {
+    $dateDebut = date('Y-m-d');
+    $dateFin = date('Y-m-d');
 } elseif ($filterPeriod === 'month') {
     $dateDebut = date('Y-m-01');
     $dateFin = date('Y-m-t');
@@ -229,6 +232,7 @@ if (!isset($_GET['serve'])) {
                             Période</label>
                         <select name="week" onchange="this.form.submit()"
                             style="width: 100%; padding: 0.6rem; background: rgba(15,23,42,0.6); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); color: var(--text-main); font-size:0.8rem;">
+                            <option value="today" <?= $filterPeriod === 'today' ? 'selected' : '' ?>>Aujourd'hui</option>
                             <option value="current" <?= $filterPeriod === 'current' ? 'selected' : '' ?>>Semaine en cours
                             </option>
                             <option value="last" <?= $filterPeriod === 'last' ? 'selected' : '' ?>>Semaine précédente</option>
