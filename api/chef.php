@@ -215,6 +215,9 @@ function prepareBCPayload($pointages)
 
 function sendToBCAPI($payload)
 {
+    // Mode Simulation (Sécurité par défaut).
+    // Passer cette variable à 'false' lorsque vous avez vos vrais accès (Client ID, Secret, etc.)
+    // fournis par l'intégrateur de Business Central.
     $simulationMode = true;
 
     if ($simulationMode) {
