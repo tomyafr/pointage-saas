@@ -74,6 +74,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
             }
         }
+    } elseif ($_POST['action'] === 'add_pointage') {
+        $addUserId = intval($_POST['user_id'] ?? 0);
+        $nouvelOf = strtoupper(trim($_POST['numero_of'] ?? ''));
+        $nouvellesHeures = floatval($_POST['heures'] ?? 0);
+        $nouvelleDate = $_POST['date_pointage'] ?? '';
+
+        if ($addUserId <= 0) {
+            $message = 'Opérateur invalide.';
+            $messageType = 'error';
+        } elseif (empty($nouvelOf) || strlen($nouvelOf) > 50) {
+            $message = 'Numéro d\'OF invalide.';
+            $messageType = 'error';
+        } elseif ($nouvellesHeures <= 0 || $nouvellesHeures > 24) {
+            $message = 'Le nombre d\'heures doit être entre 0.25 et 24.';
+            $messageType = 'error';
+        } elseif (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $nouvelleDate)) {
+            $message = 'Format de date invalide.';
+            $messageType = 'error';
+        } else {
+            try {
+                $stmt = $db->prepare('
+                    INSERT INTO pointages (user_id, numero_of, heures, date_pointage)
+                    VALUES (?, ?, ?, ?)
+                    ON CONFLICT (user_id, date_pointage, numero_of) 
+                    DO UPDATE SET heures = pointages.heures + EXCLUDED.heures, updated_at = NOW()
+                ');
+                $stmt->execute([$addUserId, $nouvelOf, $nouvellesHeures, $nouvelleDate]);
+                logAudit('POINTAGE_ADDED_BY_ADMIN', "User ID: $addUserId, OF: $nouvelOf, Heures: $nouvellesHeures, Date: $nouvelleDate");
+                $message = 'Pointage ajouté avec succès.';
+                $messageType = 'success';
+            } catch (PDOException $e) {
+                $message = 'Erreur lors de l\'ajout.';
+                $messageType = 'error';
+            }
+        }
     }
 }
 
@@ -482,11 +517,17 @@ $nbOperateurs = count($statsParOperateur);
             <div class="card glass animate-in-delay-2" style="padding:0;overflow:hidden;">
                 <div
                     style="padding:1.25rem 1.5rem;border-bottom:1px solid var(--glass-border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
-                    <h3 style="font-size:1rem;">D&eacute;tail des pointages
-                        <span style="font-size:0.75rem;color:var(--text-dim);font-weight:400;margin-left:0.5rem;">
-                            <?= $nbPointages ?> lignes
-                        </span>
-                    </h3>
+                    <div style="display:flex;align-items:center;gap:1rem;">
+                        <h3 style="font-size:1rem;">D&eacute;tail des pointages
+                            <span style="font-size:0.75rem;color:var(--text-dim);font-weight:400;margin-left:0.5rem;">
+                                <?= $nbPointages ?> lignes
+                            </span>
+                        </h3>
+                        <button type="button" class="btn btn-primary" style="padding:0.4rem 0.8rem;font-size:0.75rem;"
+                            onclick="openAddModal()">
+                            + Ajouter un pointage
+                        </button>
+                    </div>
                     <a href="export-excel.php?week=<?= $filterPeriod === 'last' ? 'last' : 'current' ?>&of=<?= urlencode($filterOf) ?>"
                         class="btn btn-ghost" style="padding:0.5rem 1rem;font-size:0.75rem;" target="_blank">
                         &#128229; Export Excel
@@ -639,6 +680,14 @@ $nbOperateurs = count($statsParOperateur);
         function closeEditModal() {
             document.getElementById('editModal').style.display = 'none';
         }
+
+        function openAddModal() {
+            document.getElementById('addModal').style.display = 'flex';
+        }
+
+        function closeAddModal() {
+            document.getElementById('addModal').style.display = 'none';
+        }
     </script>
 
     <!-- Modal Modification Pointage -->
@@ -676,6 +725,57 @@ $nbOperateurs = count($statsParOperateur);
                     <button type="button" class="btn btn-ghost" style="flex:1;"
                         onclick="closeEditModal()">Annuler</button>
                     <button type="submit" class="btn btn-primary" style="flex:1;">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Ajouter Pointage -->
+    <div id="addModal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999; background:rgba(0,0,0,0.8); align-items:center; justify-content:center; backdrop-filter:blur(5px);">
+        <div class="card glass animate-in"
+            style="width: 100%; max-width: 400px; padding: 2rem; position: relative; border-color: rgba(14,165,233,0.3);">
+            <button onclick="closeAddModal()"
+                style="position:absolute; top:1rem; right:1.5rem; background:none; border:none; color:var(--text-dim); font-size:1.5rem; cursor:pointer;">&times;</button>
+            <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem; color: var(--accent-cyan);">Ajouter un pointage</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="add_pointage">
+                <?= csrfField() ?>
+
+                <div class="form-group">
+                    <label class="label">Opérateur</label>
+                    <select name="user_id" class="input" required
+                        style="background: rgba(15, 23, 42, 0.6); color: var(--text-main);">
+                        <option value="">Sélectionner un opérateur</option>
+                        <?php foreach ($allUsers as $u): ?>
+                            <option value="<?= $u['id'] ?>">
+                                <?= htmlspecialchars($u['prenom'] . ' ' . $u['nom']) ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="label">Numéro d'OF</label>
+                    <input type="text" name="numero_of" class="input" required maxlength="50"
+                        autocapitalize="characters">
+                </div>
+
+                <div class="form-group">
+                    <label class="label">Date du pointage</label>
+                    <input type="date" name="date_pointage" class="input" required value="<?= date('Y-m-d') ?>">
+                </div>
+
+                <div class="form-group">
+                    <label class="label">Heures pointées</label>
+                    <input type="number" name="heures" class="input" step="0.25" min="0.25" max="24" required>
+                </div>
+
+                <div style="display:flex; gap:1rem; margin-top:2rem;">
+                    <button type="button" class="btn btn-ghost" style="flex:1;"
+                        onclick="closeAddModal()">Annuler</button>
+                    <button type="submit" class="btn"
+                        style="flex:1; background: var(--accent-cyan); color: #000; border: none; font-weight: bold;">Ajouter</button>
                 </div>
             </form>
         </div>

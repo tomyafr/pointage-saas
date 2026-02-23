@@ -146,14 +146,37 @@ $stmtActive = $db->prepare('SELECT numero_of, start_time FROM active_sessions WH
 $stmtActive->execute([$userId]);
 $activeSession = $stmtActive->fetch();
 
-// Récupérer les pointages de la semaine
+$allowedPeriods = ['current', 'last', 'month', 'all'];
+$filterPeriod = $_GET['period'] ?? 'current';
+if (!in_array($filterPeriod, $allowedPeriods, true)) $filterPeriod = 'current';
+
+$dateDebut = $week['monday'];
+$dateFin = $week['sunday'];
+$labelPeriod = 'Semaine en cours';
+
+if ($filterPeriod === 'last') {
+    $dateDebut = date('Y-m-d', strtotime($week['monday'] . ' -7 days'));
+    $dateFin = date('Y-m-d', strtotime($week['sunday'] . ' -7 days'));
+    $labelPeriod = 'Semaine précédente';
+} elseif ($filterPeriod === 'month') {
+    $dateDebut = date('Y-m-01');
+    $dateFin = date('Y-m-t');
+    $moisNoms = ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    $labelPeriod = 'Ce mois (' . $moisNoms[(int) date('n')] . ')';
+} elseif ($filterPeriod === 'all') {
+    $dateDebut = '2020-01-01';
+    $dateFin = $today;
+    $labelPeriod = 'Tout l\'historique';
+}
+
+// Récupérer les pointages de la période sélectionnée
 $stmt = $db->prepare('
     SELECT id, numero_of, heures, date_pointage, synced_bc 
     FROM pointages 
     WHERE user_id = ? AND date_pointage BETWEEN ? AND ?
     ORDER BY date_pointage ASC, numero_of ASC
 ');
-$stmt->execute([$userId, $week['monday'], $week['sunday']]);
+$stmt->execute([$userId, $dateDebut, $dateFin]);
 $pointages = $stmt->fetchAll();
 
 // Calculer les totaux
@@ -176,6 +199,20 @@ foreach ($pointages as $p) {
 $joursFr = ['Monday' => 'Lundi', 'Tuesday' => 'Mardi', 'Wednesday' => 'Mercredi', 'Thursday' => 'Jeudi', 'Friday' => 'Vendredi', 'Saturday' => 'Samedi', 'Sunday' => 'Dimanche'];
 $weeklyTarget = 35;
 $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
+
+$datesToDisplay = [];
+if ($filterPeriod === 'current' || $filterPeriod === 'last') {
+    $curr = new DateTime($dateDebut);
+    $endDt = new DateTime($dateFin);
+    while($curr <= $endDt) {
+        $datesToDisplay[] = $curr->format('Y-m-d');
+        $curr->modify('+1 day');
+    }
+} else {
+    $datesToDisplay = array_keys($pointagesParJour);
+    rsort($datesToDisplay);
+}
+$activeTab = $_GET['tab'] ?? (isset($_GET['period']) ? 'historique' : 'saisie');
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -244,8 +281,8 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                 <button class="btn btn-primary sidebar-link" onclick="switchTab('saisie')" id="nav-saisie" style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;">
                     <span>&#128221;</span> Saisie Rapide
                 </button>
-                <button class="btn btn-ghost sidebar-link" onclick="switchTab('semaine')" id="nav-semaine" style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;">
-                    <span>&#128197;</span> Ma Semaine
+                <button class="btn btn-ghost sidebar-link" onclick="switchTab('historique')" id="nav-historique" style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem;">
+                    <span>&#128197;</span> Mon Historique
                 </button>
                 <a href="profile.php" class="btn btn-ghost sidebar-link" style="justify-content: flex-start; padding: 0.7rem 1.1rem; font-size: 0.8rem; text-decoration: none; color: inherit;">
                     <span>&#128100;</span> Mon Profil
@@ -255,13 +292,15 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
             <!-- Weekly Progress -->
             <div style="margin-bottom: 2rem; padding: 1.25rem; background: rgba(255,255,255,0.02); border-radius: var(--radius-md); border: 1px solid var(--glass-border);">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 0.4rem;">
-                    <span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;">Objectif Hebdo</span>
-                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--primary);"><?= number_format($totalSemaine, 1) ?>h / <?= $weeklyTarget ?>h</span>
+                    <span style="font-size: 0.7rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em;"><?= $filterPeriod === 'current' || $filterPeriod === 'last' ? 'Objectif Hebdo' : 'Total Période' ?></span>
+                    <span style="font-size: 0.75rem; font-weight: 700; color: var(--primary);"><?= number_format($totalSemaine, 1) ?>h<?= $filterPeriod === 'current' || $filterPeriod === 'last' ? ' / ' . $weeklyTarget . 'h' : '' ?></span>
                 </div>
+                <?php if ($filterPeriod === 'current' || $filterPeriod === 'last'): ?>
                 <div class="progress-bar-container">
                     <div class="progress-bar-fill" style="width: <?= $weeklyProgress ?>%;"></div>
                 </div>
                 <p style="font-size: 0.65rem; color: var(--text-dim); margin-top: 0.4rem; text-align: right;"><?= $weeklyProgress ?>% atteint</p>
+                <?php endif; ?>
             </div>
 
             <div style="margin-top: auto; padding-top: 1.5rem; border-top: 1px solid var(--glass-border);">
@@ -299,7 +338,7 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                     <span class="stat-value"><?= number_format($totalAujourdhui, 1) ?><small style="font-size: 0.45em; opacity: 0.5; margin-left: 2px;">H</small></span>
                 </div>
                 <div class="stat-item glass">
-                    <span class="stat-label">Cette semaine</span>
+                    <span class="stat-label"><?= $labelPeriod ?></span>
                     <span class="stat-value"><?= number_format($totalSemaine, 1) ?><small style="font-size: 0.45em; opacity: 0.5; margin-left: 2px;">H</small></span>
                 </div>
                 <div class="stat-item glass">
@@ -450,10 +489,21 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                 </div>
             </div>
 
-            <!-- Tab Semaine -->
-            <div id="tab-semaine" style="display: none;">
+            <!-- Tab Historique -->
+            <div id="tab-historique" style="display: none;">
                 <div class="card glass animate-in">
-                    <h3 style="margin-bottom: 2rem;">Semaine du <?= date('d/m', strtotime($week['monday'])) ?> au <?= date('d/m/Y', strtotime($week['sunday'])) ?></h3>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                        <h3 style="margin: 0; font-size: 1.1rem; color: var(--text-main);"><?= htmlspecialchars($labelPeriod) ?> <?= $filterPeriod === 'current' || $filterPeriod === 'last' ? '<span style="font-size:0.8rem; color:var(--text-dim); font-weight:normal; margin-left:0.5rem;">du ' . date('d/m', strtotime($dateDebut)) . ' au ' . date('d/m/Y', strtotime($dateFin)) . '</span>' : '' ?></h3>
+                        <form method="GET" id="filterFormOp">
+                            <input type="hidden" name="tab" value="historique">
+                            <select name="period" class="input" style="background: rgba(15, 23, 42, 0.6); padding: 0.4rem 1rem; width: auto; color: var(--text-main);" onchange="this.form.submit()">
+                                <option value="current" <?= $filterPeriod==='current'?'selected':'' ?>>Semaine en cours</option>
+                                <option value="last" <?= $filterPeriod==='last'?'selected':'' ?>>Semaine précédente</option>
+                                <option value="month" <?= $filterPeriod==='month'?'selected':'' ?>>Ce mois</option>
+                                <option value="all" <?= $filterPeriod==='all'?'selected':'' ?>>Tout l'historique</option>
+                            </select>
+                        </form>
+                    </div>
                     
                     <div style="overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse; min-width: 550px;">
@@ -465,21 +515,29 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($week['dates'] as $i => $date):
+                                <?php if (empty($datesToDisplay)): ?>
+                                    <tr>
+                                        <td colspan="3" style="padding: 2rem; text-align: center; color: var(--text-dim);">Aucun pointage trouvé pour cette période.</td>
+                                    </tr>
+                                <?php else: ?>
+                                <?php foreach ($datesToDisplay as $i => $date):
                                     $dt = new DateTime($date);
                                     $jourNom = $joursFr[$dt->format('l')] ?? $dt->format('l');
                                     $isToday = ($date === $today);
                                     $jourPointages = $pointagesParJour[$date] ?? [];
                                     $jourTotal = 0;
                                     foreach($jourPointages as $p) $jourTotal += $p['heures'];
-                                    if ($i >= 5 && empty($jourPointages)) continue;
+                                    
+                                    // Ne pas afficher les week-ends vides sur la semaine courante/précédente
+                                    $dayNum = (int)$dt->format('N');
+                                    if (($filterPeriod === 'current' || $filterPeriod === 'last') && $dayNum >= 6 && empty($jourPointages)) continue;
                                 ?>
                                     <tr style="background: <?= $isToday ? 'var(--primary-subtle)' : 'transparent' ?>; border-bottom: 1px solid rgba(255,255,255,0.03);">
                                         <td style="padding: 1.25rem 1rem;">
                                             <p style="font-weight: 700; color: <?= $isToday ? 'var(--primary)' : 'var(--text-main)' ?>;">
                                                 <?= $jourNom ?> <?= $isToday ? '•' : '' ?>
                                             </p>
-                                            <p style="font-size: 0.7rem; color: var(--text-dim);"><?= $dt->format('d/m') ?></p>
+                                            <p style="font-size: 0.7rem; color: var(--text-dim);"><?= $dt->format('d/m/Y') ?></p>
                                         </td>
                                         <td style="padding: 1.25rem 1rem;">
                                             <?php if (empty($jourPointages)): ?>
@@ -488,21 +546,22 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                                                 <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
                                                     <?php foreach ($jourPointages as $p): ?>
                                                         <span style="background: rgba(255,255,255,0.04); padding: 0.2rem 0.5rem; border-radius: 6px; font-family: var(--font-mono); font-size: 0.7rem; border: 1px solid var(--glass-border);">
-                                                            <?= htmlspecialchars($p['numero_of']) ?>: <b><?= number_format($p['heures'], 1) ?>h</b>
+                                                            <?= htmlspecialchars($p['numero_of']) ?>: <b><?= number_format($p['heures'], 2) ?>h</b>
                                                         </span>
                                                     <?php endforeach; ?>
                                                 </div>
                                             <?php endif; ?>
                                         </td>
                                         <td style="padding: 1.25rem 1rem; text-align: right; font-weight: 800; font-size: 1.05rem; color: <?= $jourTotal > 0 ? 'var(--primary)' : 'var(--text-dim)' ?>;">
-                                            <?= number_format($jourTotal, 1) ?>h
+                                            <?= number_format($jourTotal, 2) ?>h
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
+                                <?php endif; ?>
                             </tbody>
                             <tfoot>
                                 <tr style="background: rgba(14, 165, 233, 0.05);">
-                                    <td colspan="2" style="padding: 1.25rem 1rem; font-weight: 700; font-size: 1rem;">TOTAL SEMAINE</td>
+                                    <td colspan="2" style="padding: 1.25rem 1rem; font-weight: 700; font-size: 1rem;">TOTAL PÉRIODE</td>
                                     <td style="padding: 1.25rem 1rem; text-align: right; font-weight: 900; font-size: 1.2rem; color: var(--accent-cyan);"><?= number_format($totalSemaine, 2) ?>h</td>
                                 </tr>
                             </tfoot>
@@ -520,14 +579,27 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
     <script>
         function switchTab(name) {
             document.getElementById('tab-saisie').style.display = name === 'saisie' ? 'block' : 'none';
-            document.getElementById('tab-semaine').style.display = name === 'semaine' ? 'block' : 'none';
+            document.getElementById('tab-historique').style.display = name === 'historique' ? 'block' : 'none';
             document.getElementById('nav-saisie').className = name === 'saisie' ? 'btn btn-primary sidebar-link' : 'btn btn-ghost sidebar-link';
-            document.getElementById('nav-semaine').className = name === 'semaine' ? 'btn btn-primary sidebar-link' : 'btn btn-ghost sidebar-link';
+            document.getElementById('nav-historique').className = name === 'historique' ? 'btn btn-primary sidebar-link' : 'btn btn-ghost sidebar-link';
             // Fermer la sidebar automatiquement sur mobile
             closeSidebar();
+            
+            // Mise à jour de la navbar mobile si existante
+            document.querySelectorAll('.mobile-nav-item').forEach(i => i.classList.remove('active'));
+            if(name === 'saisie' && document.getElementById('nav-mob-saisie')) {
+                document.getElementById('nav-mob-saisie').classList.add('active');
+            }
+            if(name === 'historique' && document.getElementById('nav-mob-historique')) {
+                document.getElementById('nav-mob-historique').classList.add('active');
+            }
             // Scroll en haut
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
+        
+        document.addEventListener("DOMContentLoaded", () => {
+            switchTab('<?= $activeTab ?>');
+        });
 
         function setActiveNav(el) {
             document.querySelectorAll('.mobile-nav-item').forEach(i => i.classList.remove('active'));
@@ -567,9 +639,9 @@ $weeklyProgress = min(100, round(($totalSemaine / $weeklyTarget) * 100));
                 <span class="mobile-nav-icon">&#128221;</span>
                 <span class="mobile-nav-label">Saisie</span>
             </button>
-            <button class="mobile-nav-item" onclick="switchTab('semaine'); setActiveNav(this)" id="nav-mob-semaine">
+            <button class="mobile-nav-item" onclick="switchTab('historique'); setActiveNav(this)" id="nav-mob-historique">
                 <span class="mobile-nav-icon">&#128197;</span>
-                <span class="mobile-nav-label">Semaine</span>
+                <span class="mobile-nav-label">Historique</span>
             </button>
             <a href="logout.php" class="mobile-nav-item" style="color: var(--error);">
                 <span class="mobile-nav-icon">&#x23FB;</span>
