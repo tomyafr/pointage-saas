@@ -15,24 +15,36 @@ $db = getDB();
 $week = getCurrentWeekDates();
 
 // Filtres — validation stricte des paramètres GET
-$filterWeek = $_GET['week'] ?? 'current';
-// Whitelist : seules valeurs autorisées
-if (!in_array($filterWeek, ['current', 'last'], true)) {
-    $filterWeek = 'current';
+$allowedPeriods = ['current', 'last', 'month', 'all'];
+$filterPeriod = $_GET['week'] ?? 'current'; // Using 'week' for backward compatibility
+if (!in_array($filterPeriod, $allowedPeriods, true)) {
+    $filterPeriod = 'current';
 }
+
+$filterUser = intval($_GET['user'] ?? 0);
 
 // Filtre OF : nettoyage et limitation de longueur (anti-injection)
 $filterOf = trim($_GET['of'] ?? '');
 $filterOf = preg_replace('/[^\w\s\-\/]/', '', $filterOf); // Garde seulement alphanum + tirets + /
 $filterOf = substr($filterOf, 0, 50); // Limite à 50 caractères
 
-if ($filterWeek === 'last') {
+if ($filterPeriod === 'last') {
     $dateDebut = date('Y-m-d', strtotime($week['monday'] . ' -7 days'));
     $dateFin = date('Y-m-d', strtotime($week['sunday'] . ' -7 days'));
+} elseif ($filterPeriod === 'month') {
+    $dateDebut = date('Y-m-01');
+    $dateFin = date('Y-m-t');
+} elseif ($filterPeriod === 'all') {
+    $dateDebut = '2020-01-01';
+    $dateFin = date('Y-m-d');
 } else {
     $dateDebut = $week['monday'];
     $dateFin = $week['sunday'];
 }
+
+$stmtUsers = $db->prepare('SELECT id, nom, prenom FROM users WHERE actif = TRUE ORDER BY nom');
+$stmtUsers->execute();
+$allUsers = $stmtUsers->fetchAll();
 
 // Récupérer les pointages
 $query = '
@@ -50,8 +62,13 @@ $query = '
 ';
 $params = [$dateDebut, $dateFin];
 
+if ($filterUser > 0) {
+    $query .= ' AND p.user_id = ?';
+    $params[] = $filterUser;
+}
+
 if (!empty($filterOf)) {
-    $query .= ' AND p.numero_of LIKE ?';
+    $query .= ' AND p.numero_of ILIKE ?';
     $params[] = '%' . $filterOf . '%';
 }
 
@@ -75,8 +92,13 @@ $queryResume = '
 ';
 $paramsResume = [$dateDebut, $dateFin];
 
+if ($filterUser > 0) {
+    $queryResume .= ' AND p.user_id = ?';
+    $paramsResume[] = $filterUser;
+}
+
 if (!empty($filterOf)) {
-    $queryResume .= ' AND p.numero_of LIKE ?';
+    $queryResume .= ' AND p.numero_of ILIKE ?';
     $paramsResume[] = '%' . $filterOf . '%';
 }
 
@@ -101,7 +123,7 @@ $filename = 'pointage_semaine_' . $dateDebut . '.xls';
 if (!isset($_GET['serve'])) {
     $nbLignes = count($pointages);
     $totalHeures = $totalGlobal ?? 0;
-    $serveUrl = '?serve=1&week=' . urlencode($filterWeek) . '&of=' . urlencode($filterOf);
+    $serveUrl = '?serve=1&week=' . urlencode($filterPeriod) . '&of=' . urlencode($filterOf) . '&user=' . $filterUser;
     ?>
     <!DOCTYPE html>
     <html lang="fr">
@@ -192,10 +214,52 @@ if (!isset($_GET['serve'])) {
         <div class="export-card">
             <span class="export-icon">&#128229;</span>
             <div class="export-title">Export Excel</div>
-            <div class="export-meta">
-                Semaine du <?= date('d/m', strtotime($dateDebut)) ?> au <?= date('d/m/Y', strtotime($dateFin)) ?>
-                <?php if ($filterOf): ?>&nbsp;&middot;&nbsp;OF : <?= htmlspecialchars($filterOf) ?><?php endif; ?>
+            <div class="export-meta" style="margin-bottom: 1rem;">
+                Du <?= date('d/m/Y', strtotime($dateDebut)) ?> au <?= date('d/m/Y', strtotime($dateFin)) ?>
             </div>
+
+            <!-- Filtres avant export -->
+            <form method="GET"
+                style="margin-bottom: 1.5rem; text-align: left; background: rgba(255,255,255,0.02); padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--glass-border);">
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <div>
+                        <label style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.3rem; display: block;">📅
+                            Période</label>
+                        <select name="week" onchange="this.form.submit()"
+                            style="width: 100%; padding: 0.6rem; background: rgba(15,23,42,0.6); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); color: var(--text-main); font-size:0.8rem;">
+                            <option value="current" <?= $filterPeriod === 'current' ? 'selected' : '' ?>>Semaine en cours
+                            </option>
+                            <option value="last" <?= $filterPeriod === 'last' ? 'selected' : '' ?>>Semaine précédente</option>
+                            <option value="month" <?= $filterPeriod === 'month' ? 'selected' : '' ?>>Ce mois</option>
+                            <option value="all" <?= $filterPeriod === 'all' ? 'selected' : '' ?>>Tout l'historique</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.3rem; display: block;">👤
+                            Opérateur</label>
+                        <select name="user" onchange="this.form.submit()"
+                            style="width: 100%; padding: 0.6rem; background: rgba(15,23,42,0.6); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); color: var(--text-main); font-size:0.8rem;">
+                            <option value="0">Tous les opérateurs</option>
+                            <?php foreach ($allUsers as $u): ?>
+                                <option value="<?= $u['id'] ?>" <?= $filterUser == $u['id'] ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($u['prenom'] . ' ' . $u['nom']) ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label
+                            style="font-size: 0.75rem; color: var(--text-dim); margin-bottom: 0.3rem; display: block;">🏷️
+                            Numéro d'OF</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <input type="text" name="of" value="<?= htmlspecialchars($filterOf) ?>" placeholder="Ex: OF-123"
+                                style="flex: 1; min-width:0; padding: 0.6rem; background: rgba(15,23,42,0.6); border: 1px solid var(--glass-border); border-radius: var(--radius-sm); color: var(--text-main); font-size:0.8rem;">
+                            <button type="submit" class="btn btn-primary"
+                                style="padding: 0.4rem 0.8rem; font-size:0.8rem;">Appliquer</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
 
             <div class="export-stats">
                 <div class="export-stat">
@@ -238,7 +302,7 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
     xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
 
     <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
-        <Title>Pointage Atelier - Semaine du <?= $dateDebut ?></Title>
+        <Title>Pointage Atelier - Du <?= $dateDebut ?></Title>
         <Author>Pointage Atelier SaaS</Author>
         <Created><?= date('c') ?></Created>
     </DocumentProperties>
@@ -294,7 +358,7 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
                 <Cell ss:StyleID="title"><Data ss:Type="String">Pointage Atelier — Résumé par OF</Data></Cell>
             </Row>
             <Row>
-                <Cell ss:StyleID="subtitle"><Data ss:Type="String">Semaine du
+                <Cell ss:StyleID="subtitle"><Data ss:Type="String">Mouvement du
                         <?= date('d/m/Y', strtotime($dateDebut)) ?> au <?= date('d/m/Y', strtotime($dateFin)) ?></Data>
                 </Cell>
             </Row>
@@ -355,7 +419,7 @@ echo '<?mso-application progid="Excel.Sheet"?>' . "\n";
                 <Cell ss:StyleID="title"><Data ss:Type="String">Détail des pointages</Data></Cell>
             </Row>
             <Row>
-                <Cell ss:StyleID="subtitle"><Data ss:Type="String">Semaine du
+                <Cell ss:StyleID="subtitle"><Data ss:Type="String">Mouvement du
                         <?= date('d/m/Y', strtotime($dateDebut)) ?> au <?= date('d/m/Y', strtotime($dateFin)) ?></Data>
                 </Cell>
             </Row>
